@@ -1,0 +1,2441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AUTOMOTORES 499</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#0F172A; --bg2:#1E293B; --bg3:#0A0F1E;
+      --red:#DC2626; --red2:#B91C1C; --red3:#F87171;
+      --blue:#1D4ED8; --blue2:#2563EB; --blue3:#3B82F6;
+      --metal:#CBD5E1; --white:#FFFFFF; --gray:#64748B; --gray2:#94A3B8;
+      --border:#334155; --font:'Montserrat','Rajdhani',sans-serif;
+    }
+    body { font-family: var(--font); background: var(--bg); color: var(--white); }
+    input, select, textarea, button { font-family: var(--font); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg3); }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    * { scrollbar-width: thin; scrollbar-color: #334155 var(--bg3); }
+    @keyframes pulse-red { 0%,100%{box-shadow:0 0 20px #DC262645} 50%{box-shadow:0 0 45px #DC262675} }
+    @keyframes float-car { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+    @keyframes slide-up { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes glow-stripe { 0%,100%{opacity:0.25} 50%{opacity:0.7} }
+    .hover-lift { transition: all .3s cubic-bezier(.4,0,.2,1); }
+    .hover-lift:hover { transform: translateY(-6px) scale(1.015); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+
+
+// ─── INITIAL DATA ────────────────────────────────────────────────────────────
+const USERS = {
+  automotores499: { password: "avenidamitre", name: "Alejandro", greeting: "Bienvenido Ale 👋", role: "admin", modules: ["autos","clientes","agenda","comisiones","documentos","reportes","consultas","configuracion"] },
+  florencia499:   { password: "avenidamitre", name: "Florencia",  greeting: "Bienvenida Flor 👋", role: "admin", modules: ["autos","clientes","agenda","comisiones","documentos","reportes","consultas","configuracion"] },
+};
+
+const SAMPLE_AUTOS = [];
+
+const SAMPLE_CLIENTES = [];
+
+const SAMPLE_AGENDA = [];
+
+const SAMPLE_COMISIONES = [];
+
+// ─── STORAGE HELPERS ─────────────────────────────────────────────────────────
+const useStorage = (key, initial) => {
+  const [val, setVal] = useState(() => {
+    try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : initial; } catch { return initial; }
+  });
+  const save = useCallback(v => { setVal(v); try { localStorage.setItem(key, JSON.stringify(v)); } catch{} }, [key]);
+  return [val, save];
+};
+
+// ─── ICONS ───────────────────────────────────────────────────────────────────
+const Icon = ({ name, size=20 }) => {
+  const icons = {
+    home: "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10",
+    car: "M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v10a2 2 0 01-2 2h-2 M14 17a2 2 0 11-4 0 2 2 0 014 0zM7 17a2 2 0 11-4 0 2 2 0 014 0z",
+    users: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2 M23 21v-2a4 4 0 00-3-3.87 M16 3.13a4 4 0 010 7.75 M9 7a4 4 0 110 8 4 4 0 010-8z",
+    calendar: "M3 4h18v18H3z M16 2v4 M8 2v4 M3 10h18",
+    dollar: "M12 1v22 M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6",
+    folder: "M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z",
+    chart: "M18 20V10 M12 20V4 M6 20v-6",
+    settings: "M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z",
+    bell: "M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 01-3.46 0",
+    search: "M11 19a8 8 0 100-16 8 8 0 000 16z M21 21l-4.35-4.35",
+    plus: "M12 5v14 M5 12h14",
+    edit: "M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7 M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z",
+    trash: "M3 6h18 M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2",
+    eye: "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M15 12a3 3 0 11-6 0 3 3 0 016 0z",
+    share: "M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8 M16 6l-4-4-4 4 M12 2v13",
+    check: "M20 6L9 17l-5-5",
+    x: "M18 6L6 18 M6 6l12 12",
+    chevronDown: "M6 9l6 6 6-6",
+    menu: "M3 12h18 M3 6h18 M3 18h18",
+    phone: "M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z",
+    image: "M21 15l-5-5L5 21 M3 3h18v18H3z M8.5 8.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z",
+    upload: "M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4 M17 8l-5-5-5 5 M12 3v12",
+    logout: "M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4 M16 17l5-5-5-5 M21 12H9",
+    user: "M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2 M12 11a4 4 0 100-8 4 4 0 000 8z",
+    star: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
+    whatsapp: "M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z M5.339 17.957A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10a9.96 9.96 0 01-1.339 5.046L22 22l-4.954-1.339z",
+    globe: "M12 2a10 10 0 100 20A10 10 0 0012 2z M2 12h20 M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z",
+    arrowLeft: "M19 12H5 M12 19l-7-7 7-7",
+    info: "M12 22a10 10 0 100-20 10 10 0 000 20z M12 8v4 M12 16h.01",
+    lock: "M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2z M7 11V7a5 5 0 0110 0v4",
+    message: "M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z",
+    messageCircle: "M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z",
+    send: "M22 2L11 13 M22 2L15 22 9 13 2 9z",
+    facebook: "M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z",
+    filter: "M22 3H2l8 9.46V19l4 2v-8.54L22 3z",
+    tag: "M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z M7 7h.01",
+  };
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {(icons[name]||"").split(" M").map((d,i)=><path key={i} d={i===0?d:`M${d}`}/>)}
+    </svg>
+  );
+};
+
+// ─── STATUS BADGE ─────────────────────────────────────────────────────────────
+const StatusBadge = ({ status }) => {
+  const map = {
+    disponible: { color:"#10B981", bg:"#10B98122", label:"Disponible" },
+    reservado:  { color:"#F59E0B", bg:"#F59E0B22", label:"Reservado" },
+    vendido:    { color:"#EF4444", bg:"#EF444422", label:"Vendido" },
+    pendiente:  { color:"#3B82F6", bg:"#3B82F622", label:"Pendiente" },
+    confirmado: { color:"#10B981", bg:"#10B98122", label:"Confirmado" },
+    cancelado:  { color:"#EF4444", bg:"#EF444422", label:"Cancelado" },
+    reprogramado:{ color:"#F59E0B", bg:"#F59E0B22", label:"Reprogramado" },
+    nuevo:      { color:"#8B5CF6", bg:"#8B5CF622", label:"Nuevo" },
+    interesado: { color:"#3B82F6", bg:"#3B82F622", label:"Interesado" },
+    visita:     { color:"#F59E0B", bg:"#F59E0B22", label:"Visita" },
+    cerrado:    { color:"#64748B", bg:"#6B728022", label:"Cerrado" },
+  };
+  const m = map[status] || { color:"#64748B", bg:"#6B728022", label: status };
+  return <span style={{ background:m.bg, color:m.color, border:`1px solid ${m.color}40`, borderRadius:20, padding:"3px 10px", fontSize:12, fontWeight:600 }}>{m.label}</span>;
+};
+
+// ─── MODAL ────────────────────────────────────────────────────────────────────
+const Modal = ({ open, onClose, title, children, wide }) => {
+  if (!open) return null;
+  return (
+    <div style={{ position:"fixed", inset:0, background:"#000000cc", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:"#1E293B", borderRadius:16, width:"100%", maxWidth:wide?800:560, maxHeight:"90vh", overflow:"auto", border:"1px solid #334155", boxShadow:"0 25px 50px #00000080" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"20px 24px", borderBottom:"1px solid #1E293B" }}>
+          <h2 style={{ margin:0, fontSize:18, fontWeight:700, color:"#F9FAFB" }}>{title}</h2>
+          <button onClick={onClose} style={{ background:"#374151", border:"none", borderRadius:8, padding:8, color:"#94A3B8", cursor:"pointer" }}><Icon name="x" size={16}/></button>
+        </div>
+        <div style={{ padding:24 }}>{children}</div>
+      </div>
+    </div>
+  );
+};
+
+// ─── FORM FIELD ───────────────────────────────────────────────────────────────
+const Field = ({ label, children, col=1 }) => (
+  <div style={{ gridColumn:`span ${col}` }}>
+    <label style={{ display:"block", fontSize:13, fontWeight:600, color:"#94A3B8", marginBottom:6 }}>{label}</label>
+    {children}
+  </div>
+);
+
+const Input = ({ value, onChange, placeholder, type="text", ...p }) => (
+  <input type={type} value={value||""} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
+    style={{ width:"100%", background:"#0A0F1E", border:"1px solid #334155", borderRadius:8, padding:"10px 12px", color:"#F9FAFB", fontSize:14, outline:"none", boxSizing:"border-box" }} {...p}/>
+);
+
+const Select = ({ value, onChange, children }) => (
+  <select value={value||""} onChange={e=>onChange(e.target.value)}
+    style={{ width:"100%", background:"#0A0F1E", border:"1px solid #334155", borderRadius:8, padding:"10px 12px", color:"#F9FAFB", fontSize:14, outline:"none", boxSizing:"border-box" }}>
+    {children}
+  </select>
+);
+
+const Textarea = ({ value, onChange, placeholder, rows=3 }) => (
+  <textarea value={value||""} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows}
+    style={{ width:"100%", background:"#0A0F1E", border:"1px solid #334155", borderRadius:8, padding:"10px 12px", color:"#F9FAFB", fontSize:14, outline:"none", boxSizing:"border-box", resize:"vertical" }}/>
+);
+
+const Btn = ({ onClick, children, variant="primary", size="md", full, icon }) => {
+  const styles = {
+    primary: { background:"linear-gradient(135deg,#2563EB,#3B82F6)", color:"#fff", border:"none" },
+    secondary: { background:"#374151", color:"#F9FAFB", border:"1px solid #4B5563" },
+    success: { background:"linear-gradient(135deg,#059669,#10B981)", color:"#fff", border:"none" },
+    danger: { background:"linear-gradient(135deg,#DC2626,#EF4444)", color:"#fff", border:"none" },
+    ghost: { background:"transparent", color:"#94A3B8", border:"1px solid #334155" },
+  };
+  const pad = size==="sm" ? "7px 14px" : size==="lg" ? "14px 28px" : "10px 20px";
+  return (
+    <button onClick={onClick} style={{ ...styles[variant], padding:pad, borderRadius:10, fontSize:size==="sm"?13:14, fontWeight:600, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:6, width:full?"100%":undefined, justifyContent:full?"center":undefined, transition:"all .2s", boxShadow:variant==="primary"?"0 4px 15px #2563EB44":undefined }}>
+      {icon && <Icon name={icon} size={16}/>}{children}
+    </button>
+  );
+};
+
+// ─── PORTADA PRINCIPAL (pantalla de inicio) ─────────────────────────────────
+const Portada = ({ onAdmin, onAdminLogin, onClientes }) => {
+  const [section, setSection] = useState("home");
+  const [pass, setPass]       = useState("");
+  const [err,  setErr]        = useState("");
+  const [loading, setLoading] = useState(false);
+  const [hov, setHov]         = useState(null);
+
+  const SHARED_PASSWORD = "avenidamitre";
+  const profiles = [
+    { username:"automotores499", key:"ale",  name:"Alejandro", initial:"A", gradient:"linear-gradient(135deg,#1D4ED8,#3B82F6)", glow:"#1D4ED8" },
+    { username:"florencia499",   key:"flor", name:"Florencia",  initial:"F", gradient:"linear-gradient(135deg,#DC2626,#F87171)", glow:"#DC2626" },
+  ];
+
+  const checkPass = () => {
+    setLoading(true); setErr("");
+    setTimeout(() => {
+      if (pass === SHARED_PASSWORD) { setSection("admin_perfil"); setErr(""); }
+      else setErr("Contraseña incorrecta");
+      setLoading(false);
+    }, 500);
+  };
+
+  const selectProfile = (profile) => {
+    const u = USERS[profile.username];
+    if (u) (onAdminLogin || onAdmin)({ username: profile.username, ...u });
+  };
+
+  const F = "'Montserrat','Rajdhani',sans-serif";
+
+  return (
+    <div style={{ minHeight:"100vh", background:"linear-gradient(160deg,#0F172A 0%,#0A0F1E 55%,#0F172A 100%)",
+      fontFamily:F, position:"relative", overflow:"hidden" }}>
+
+      {/* BG */}
+      <div style={{ position:"absolute", inset:0, pointerEvents:"none" }}>
+        <div style={{ position:"absolute", top:"-18%", left:"-8%", width:"55vw", height:"55vw",
+          background:"radial-gradient(circle, #1D4ED822 0%, transparent 65%)", borderRadius:"50%" }}/>
+        <div style={{ position:"absolute", bottom:"-12%", right:"-8%", width:"50vw", height:"50vw",
+          background:"radial-gradient(circle, #DC262618 0%, transparent 65%)", borderRadius:"50%" }}/>
+        <svg style={{ position:"absolute", inset:0, width:"100%", height:"100%", opacity:0.045 }} xmlns="http://www.w3.org/2000/svg">
+          <defs><pattern id="g499" width="60" height="60" patternUnits="userSpaceOnUse">
+            <path d="M60 0L0 0 0 60" fill="none" stroke="#CBD5E1" strokeWidth="0.5"/>
+          </pattern></defs>
+          <rect width="100%" height="100%" fill="url(#g499)"/>
+        </svg>
+        {[12,30,50,70].map((t,i)=>(
+          <div key={i} style={{ position:"absolute", top:`${t}%`, left:0, right:0, height:"1px",
+            background:`linear-gradient(90deg,transparent,${i%2?"#DC262614":"#1D4ED810"},transparent)`,
+            animation:`glow-stripe ${2.5+i*0.4}s ease-in-out infinite` }}/>
+        ))}
+      </div>
+
+      <div style={{ position:"relative", zIndex:1, minHeight:"100vh", display:"flex", flexDirection:"column",
+        alignItems:"center", justifyContent:"center", padding:"40px 16px" }}>
+
+        {/* ── HOME ── */}
+        {section === "home" && (<>
+
+          {/* HERO */}
+          <div style={{ textAlign:"center", marginBottom:48, animation:"slide-up .55s ease both" }}>
+            <div style={{ display:"inline-flex", alignItems:"center", gap:10, marginBottom:22,
+              background:"linear-gradient(135deg,#DC262612,#1D4ED80C)", border:"1px solid #DC262628",
+              borderRadius:30, padding:"8px 22px" }}>
+              <div style={{ width:8, height:8, borderRadius:"50%", background:"#DC2626",
+                boxShadow:"0 0 10px #DC2626", animation:"pulse-red 2s infinite" }}/>
+              <span style={{ fontSize:11, fontWeight:700, color:"#94A3B8", letterSpacing:3, textTransform:"uppercase" }}>
+                Compra · Venta · Permuta · Mendoza
+              </span>
+            </div>
+
+            <h1 style={{ margin:"0 0 2px", fontSize:"clamp(46px,9.5vw,92px)", fontWeight:900, lineHeight:0.9,
+              letterSpacing:-2, background:"linear-gradient(135deg,#FFFFFF 0%,#CBD5E1 50%,#94A3B8 100%)",
+              WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>AUTOMOTORES</h1>
+            <div style={{ fontSize:"clamp(72px,15vw,152px)", fontWeight:900, lineHeight:0.82, letterSpacing:-4,
+              background:"linear-gradient(135deg,#DC2626 0%,#F87171 45%,#DC2626 100%)",
+              WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
+              filter:"drop-shadow(0 0 40px #DC262660)" }}>499</div>
+
+            <div style={{ display:"flex", alignItems:"center", gap:14, justifyContent:"center", marginTop:16 }}>
+              <div style={{ height:1, width:70, background:"linear-gradient(90deg,transparent,#DC2626)" }}/>
+              <span style={{ fontSize:10, fontWeight:700, color:"#475569", letterSpacing:4, textTransform:"uppercase" }}>Mendoza · Argentina</span>
+              <div style={{ height:1, width:70, background:"linear-gradient(90deg,#DC2626,transparent)" }}/>
+            </div>
+
+            {/* SVG Car */}
+            <div style={{ marginTop:32, animation:"float-car 4s ease-in-out infinite" }}>
+              <svg viewBox="0 0 620 170" style={{ width:"min(500px,86vw)", filter:"drop-shadow(0 14px 55px #DC262655)" }} xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="cbody" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#DC2626"/><stop offset="55%" stopColor="#B91C1C"/><stop offset="100%" stopColor="#7F1D1D"/>
+                  </linearGradient>
+                  <linearGradient id="cshine" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#fff" stopOpacity="0.28"/><stop offset="100%" stopColor="#fff" stopOpacity="0"/>
+                  </linearGradient>
+                  <radialGradient id="wgl"><stop offset="0%" stopColor="#3B82F6" stopOpacity="0.75"/>
+                    <stop offset="100%" stopColor="#1D4ED8" stopOpacity="0.08"/></radialGradient>
+                </defs>
+                <ellipse cx="300" cy="158" rx="238" ry="9" fill="#DC2626" opacity="0.09"/>
+                <path d="M55 116 L78 116 Q83 116 87 112 L102 95 L134 68 Q150 57 172 52 L287 46 Q317 44 347 46 L430 53 Q450 56 465 67 L512 97 Q518 103 520 109 L527 116 Z" fill="url(#cbody)"/>
+                <path d="M164 94 L180 68 Q192 54 208 50 L292 46 Q324 45 356 47 L414 55 Q428 59 438 71 L454 94 Z" fill="#991B1B"/>
+                <path d="M180 68 L197 53 L294 47 L377 50 L404 63 L367 65 L220 63 Z" fill="url(#cshine)"/>
+                <path d="M185 90 L198 68 Q206 57 217 54 L280 50 L280 90 Z" fill="#0F172A" opacity="0.88"/>
+                <path d="M285 50 L380 54 Q394 58 406 72 L420 90 L285 90 Z" fill="#0F172A" opacity="0.88"/>
+                <line x1="282" y1="49" x2="282" y2="91" stroke="#DC2626" strokeWidth="2.5"/>
+                <circle cx="150" cy="119" r="30" fill="#0A0F1E"/>
+                <circle cx="150" cy="119" r="25" fill="#1E293B"/>
+                <circle cx="150" cy="119" r="17" fill="#334155"/>
+                <circle cx="150" cy="119" r="9" fill="url(#wgl)"/>
+                <circle cx="440" cy="119" r="30" fill="#0A0F1E"/>
+                <circle cx="440" cy="119" r="25" fill="#1E293B"/>
+                <circle cx="440" cy="119" r="17" fill="#334155"/>
+                <circle cx="440" cy="119" r="9" fill="url(#wgl)"/>
+                <rect x="508" y="97" width="21" height="14" rx="4" fill="#3B82F6" opacity="0.9"/>
+                <rect x="61" y="98" width="22" height="13" rx="4" fill="#DC2626"/>
+                <path d="M172 94 L454 94" stroke="#DC262635" strokeWidth="1.5"/>
+              </svg>
+            </div>
+          </div>
+
+          {/* CARDS */}
+          <div style={{ width:"100%", maxWidth:600, display:"grid", gridTemplateColumns:"1fr 1fr", gap:20,
+            animation:"slide-up .65s ease .08s both" }}>
+
+            {/* CLIENTES */}
+            <button onClick={onClientes} className="hover-lift"
+              onMouseEnter={()=>setHov("cli")} onMouseLeave={()=>setHov(null)}
+              style={{ background: hov==="cli" ? "linear-gradient(135deg,#DC262618,#DC262806)" : "linear-gradient(135deg,#1E293B,#0A0F1E)",
+                borderRadius:24, padding:"34px 22px",
+                border: hov==="cli" ? "2px solid #DC2626" : "2px solid #1E293B",
+                cursor:"pointer", textAlign:"center",
+                boxShadow: hov==="cli" ? "0 0 50px #DC262630,inset 0 1px 0 #DC262622" : "0 4px 28px #00000055",
+                outline:"none" }}>
+              <div style={{ width:70, height:70, borderRadius:20, margin:"0 auto 18px",
+                background: hov==="cli" ? "linear-gradient(135deg,#DC2626,#B91C1C)" : "#DC262610",
+                border: hov==="cli" ? "2px solid #DC262660" : "2px solid #33415555",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                boxShadow: hov==="cli" ? "0 0 28px #DC262660" : "none", transition:"all .3s" }}>
+                <Icon name="users" size={32}/>
+              </div>
+              <div style={{ fontSize:20, fontWeight:900, color:"#FFFFFF", marginBottom:9, letterSpacing:1 }}>CLIENTES</div>
+              <div style={{ fontSize:12, color: hov==="cli" ? "#CBD5E1" : "#64748B", lineHeight:1.75, fontWeight:500 }}>
+                Catálogo de autos<br/>Fotos · Precios · Consultas
+              </div>
+              <div style={{ marginTop:14, display:"inline-flex", alignItems:"center", gap:6,
+                background:"#10B98114", border:"1px solid #10B98130", borderRadius:20, padding:"5px 13px" }}>
+                <div style={{ width:6, height:6, borderRadius:"50%", background:"#10B981" }}/>
+                <span style={{ fontSize:10, fontWeight:800, color:"#10B981", letterSpacing:1.5, textTransform:"uppercase" }}>Acceso libre</span>
+              </div>
+            </button>
+
+            {/* ADMINISTRADORES */}
+            <button onClick={()=>setSection("admin_pass")} className="hover-lift"
+              onMouseEnter={()=>setHov("adm")} onMouseLeave={()=>setHov(null)}
+              style={{ background: hov==="adm" ? "linear-gradient(135deg,#1D4ED818,#1D4ED806)" : "linear-gradient(135deg,#1E293B,#0A0F1E)",
+                borderRadius:24, padding:"34px 22px",
+                border: hov==="adm" ? "2px solid #1D4ED8" : "2px solid #1E293B",
+                cursor:"pointer", textAlign:"center",
+                boxShadow: hov==="adm" ? "0 0 50px #1D4ED830,inset 0 1px 0 #1D4ED822" : "0 4px 28px #00000055",
+                outline:"none" }}>
+              <div style={{ width:70, height:70, borderRadius:20, margin:"0 auto 18px",
+                background: hov==="adm" ? "linear-gradient(135deg,#1D4ED8,#2563EB)" : "#1D4ED810",
+                border: hov==="adm" ? "2px solid #1D4ED860" : "2px solid #33415555",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                boxShadow: hov==="adm" ? "0 0 28px #1D4ED860" : "none", transition:"all .3s" }}>
+                <Icon name="lock" size={32}/>
+              </div>
+              <div style={{ fontSize:20, fontWeight:900, color:"#FFFFFF", marginBottom:9, letterSpacing:1 }}>ADMINISTRADORES</div>
+              <div style={{ fontSize:12, color: hov==="adm" ? "#CBD5E1" : "#64748B", lineHeight:1.75, fontWeight:500 }}>
+                Alejandro · Florencia<br/>Panel interno exclusivo
+              </div>
+              <div style={{ marginTop:14, display:"inline-flex", alignItems:"center", gap:6,
+                background:"#1D4ED814", border:"1px solid #1D4ED830", borderRadius:20, padding:"5px 13px" }}>
+                <Icon name="lock" size={10}/>
+                <span style={{ fontSize:10, fontWeight:800, color:"#3B82F6", letterSpacing:1.5, textTransform:"uppercase" }}>Con contraseña</span>
+              </div>
+            </button>
+          </div>
+        </>)}
+
+        {/* ── ADMIN PASSWORD ── */}
+        {section === "admin_pass" && (
+          <div style={{ width:"100%", maxWidth:420, animation:"slide-up .4s ease both" }}>
+            <div style={{ textAlign:"center", marginBottom:30 }}>
+              <div style={{ fontSize:11, fontWeight:800, color:"#DC2626", letterSpacing:4, textTransform:"uppercase", marginBottom:4 }}>Panel Administrativo</div>
+              <div style={{ fontSize:26, fontWeight:900, color:"#FFF", letterSpacing:-1 }}>AUTOMOTORES <span style={{ color:"#DC2626" }}>499</span></div>
+            </div>
+            <div style={{ background:"linear-gradient(135deg,#1E293B,#0A0F1E)", borderRadius:24, padding:34,
+              border:"1px solid #334155", boxShadow:"0 30px 70px #00000070,inset 0 1px 0 #FFFFFF07" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:26 }}>
+                <div style={{ width:46, height:46, borderRadius:14, background:"linear-gradient(135deg,#1D4ED8,#2563EB)",
+                  display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 0 24px #1D4ED870", flexShrink:0 }}>
+                  <Icon name="lock" size={22}/>
+                </div>
+                <div>
+                  <div style={{ fontSize:15, fontWeight:800, color:"#FFF" }}>Acceso Administradores</div>
+                  <div style={{ fontSize:12, color:"#64748B", marginTop:2 }}>Ingresá la contraseña para continuar</div>
+                </div>
+              </div>
+              {err && (
+                <div style={{ background:"#DC262612", border:"1px solid #DC262640", borderRadius:12,
+                  padding:"12px 16px", marginBottom:18, color:"#F87171", fontSize:13,
+                  display:"flex", alignItems:"center", gap:8 }}>
+                  <Icon name="info" size={14}/>{err}
+                </div>
+              )}
+              <div style={{ display:"flex", flexDirection:"column", gap:13 }}>
+                <input type="password" value={pass}
+                  onChange={e=>setPass(e.target.value)}
+                  onKeyDown={e=>e.key==="Enter"&&checkPass()}
+                  placeholder="Contraseña"
+                  style={{ background:"#0A0F1E", border:"1px solid #334155", borderRadius:12, color:"#FFF",
+                    fontFamily:F, fontSize:14, padding:"14px 16px", width:"100%", outline:"none",
+                    boxSizing:"border-box", transition:"border-color .2s" }}/>
+                <button onClick={checkPass} disabled={loading}
+                  style={{ background:"linear-gradient(135deg,#DC2626,#B91C1C)", border:"none", borderRadius:12,
+                    padding:"15px", color:"#fff", fontFamily:F, fontSize:14, fontWeight:800, cursor:"pointer",
+                    boxShadow:"0 8px 28px #DC262655", letterSpacing:2, textTransform:"uppercase",
+                    transition:"all .2s", opacity:loading?0.7:1 }}>
+                  {loading ? "Verificando..." : "INGRESAR →"}
+                </button>
+                <button onClick={()=>{setSection("home");setPass("");setErr("");}}
+                  style={{ background:"transparent", border:"1px solid #334155", borderRadius:12, padding:"12px",
+                    color:"#64748B", fontSize:13, cursor:"pointer", fontWeight:600, fontFamily:F, transition:"all .2s" }}>
+                  ← Volver al inicio
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── SELECT PROFILE ── */}
+        {section === "admin_perfil" && (
+          <div style={{ width:"100%", maxWidth:450, animation:"slide-up .4s ease both" }}>
+            <div style={{ textAlign:"center", marginBottom:30 }}>
+              <div style={{ display:"inline-flex", alignItems:"center", gap:8, background:"#10B98114",
+                border:"1px solid #10B98132", borderRadius:20, padding:"6px 16px", marginBottom:14 }}>
+                <span style={{ fontSize:14 }}>✓</span>
+                <span style={{ fontSize:11, color:"#10B981", fontWeight:800, letterSpacing:1.5, textTransform:"uppercase" }}>Contraseña correcta</span>
+              </div>
+              <div style={{ fontSize:24, fontWeight:900, color:"#FFF" }}>¿Quién sos?</div>
+              <div style={{ fontSize:13, color:"#64748B", marginTop:4 }}>Elegí tu perfil para ingresar</div>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+              {profiles.map(p => (
+                <button key={p.key} onClick={()=>selectProfile(p)} className="hover-lift"
+                  onMouseEnter={()=>setHov(p.key)} onMouseLeave={()=>setHov(null)}
+                  style={{ background:"linear-gradient(135deg,#1E293B,#0A0F1E)",
+                    border:`2px solid ${hov===p.key ? p.glow : "#334155"}`,
+                    borderRadius:22, padding:"28px 18px", cursor:"pointer", display:"flex",
+                    flexDirection:"column", alignItems:"center", gap:14, outline:"none",
+                    boxShadow: hov===p.key ? `0 20px 50px ${p.glow}40` : "0 4px 20px #00000050" }}>
+                  <div style={{ width:74, height:74, borderRadius:"50%", background:p.gradient,
+                    display:"flex", alignItems:"center", justifyContent:"center", fontSize:30,
+                    fontWeight:900, color:"#fff", transition:"all .3s",
+                    boxShadow:`0 0 ${hov===p.key?"32px":"12px"} ${p.glow}${hov===p.key?"80":"40"}` }}>
+                    {p.initial}
+                  </div>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ fontSize:17, fontWeight:800, color:"#FFF" }}>{p.name}</div>
+                    <div style={{ fontSize:10, color:"#64748B", marginTop:3, fontWeight:700, letterSpacing:2, textTransform:"uppercase" }}>Administrador</div>
+                  </div>
+                  <div style={{ fontSize:11, fontWeight:800, color: hov===p.key ? p.glow : "#475569",
+                    letterSpacing:2, textTransform:"uppercase", transition:"color .2s" }}>
+                    {hov===p.key ? "→ INGRESAR" : "Seleccionar"}
+                  </div>
+                </button>
+              ))}
+            </div>
+            <button onClick={()=>{setSection("admin_pass");setPass("");setErr("");}}
+              style={{ width:"100%", marginTop:18, background:"transparent", border:"1px solid #334155",
+                borderRadius:12, padding:"12px", color:"#64748B", fontSize:13, cursor:"pointer",
+                fontWeight:600, fontFamily:F, transition:"all .2s" }}>
+              ← Volver
+            </button>
+          </div>
+        )}
+
+        <p style={{ textAlign:"center", color:"#1E293B", fontSize:10, marginTop:36,
+          letterSpacing:3, fontWeight:700, textTransform:"uppercase" }}>
+          Automotores 499 © {new Date().getFullYear()} · Mendoza, Argentina
+        </p>
+      </div>
+    </div>
+  );
+};
+
+// ─── SIDEBAR ─────────────────────────────────────────────────────────────────
+const Sidebar = ({ activeModule, onNavigate, user, collapsed, onToggle }) => {
+  const navItems = [
+    { id:"dashboard", icon:"home", label:"Inicio" },
+    { id:"autos", icon:"car", label:"Autos" },
+    { id:"clientes", icon:"users", label:"Clientes" },
+    { id:"agenda", icon:"calendar", label:"Agenda" },
+    { id:"comisiones", icon:"dollar", label:"Comisiones" },
+    { id:"documentos", icon:"folder", label:"Documentos" },
+    { id:"reportes", icon:"chart", label:"Reportes" },
+    { id:"consultas", icon:"message", label:"Consultas" },
+    { id:"configuracion", icon:"settings", label:"Configuración" },
+  ];
+  const allowed = ["autos","clientes","agenda","comisiones","documentos","reportes","consultas","configuracion"];
+
+  return (
+    <div style={{ width: collapsed ? 66 : 238, background:"linear-gradient(180deg,#0A0F1E 0%,#0F172A 100%)",
+      borderRight:"1px solid #1E293B", display:"flex", flexDirection:"column",
+      transition:"width .3s cubic-bezier(.4,0,.2,1)", flexShrink:0, position:"relative", zIndex:10 }}>
+      <div style={{ padding: collapsed ? "16px 12px" : "18px 18px", borderBottom:"1px solid #1E293B",
+        display:"flex", alignItems:"center", gap:12 }}>
+        <div style={{ width:36, height:36, borderRadius:11, background:"linear-gradient(135deg,#DC2626,#B91C1C)",
+          display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0,
+          boxShadow:"0 0 16px #DC262255" }}>
+          <Icon name="car" size={19}/>
+        </div>
+        {!collapsed && <div>
+          <div style={{ fontSize:11, fontWeight:800, color:"#94A3B8", letterSpacing:2, textTransform:"uppercase" }}>Automotores</div>
+          <div style={{ fontSize:20, fontWeight:900, color:"#DC2626", lineHeight:1 }}>499</div>
+        </div>}
+      </div>
+      <nav style={{ flex:1, padding:"8px 0", overflowY:"auto" }}>
+        {navItems.map(item => {
+          const isAllowed = item.id === "dashboard" || allowed.includes(item.id);
+          const isActive = activeModule === item.id;
+          return (
+            <button key={item.id} onClick={() => isAllowed && onNavigate(item.id)}
+              style={{ width:"100%", display:"flex", alignItems:"center", gap:12,
+                padding: collapsed ? "12px 16px" : "12px 18px",
+                background: isActive ? "linear-gradient(135deg,#DC262618,#DC262806)" : "transparent",
+                border:"none", borderLeft: isActive ? "3px solid #DC2626" : "3px solid transparent",
+                color: isActive ? "#F87171" : isAllowed ? "#94A3B8" : "#334155",
+                cursor: isAllowed ? "pointer" : "not-allowed",
+                transition:"all .2s", textAlign:"left", fontFamily:"'Montserrat',sans-serif" }}>
+              <Icon name={item.icon} size={19}/>
+              {!collapsed && <span style={{ fontSize:13, fontWeight: isActive ? 700 : 500 }}>{item.label}</span>}
+              {!collapsed && isActive && <div style={{ marginLeft:"auto", width:6, height:6, borderRadius:"50%",
+                background:"#DC2626", boxShadow:"0 0 8px #DC2626" }}/>}
+            </button>
+          );
+        })}
+      </nav>
+      {!collapsed && (
+        <div style={{ padding:"13px 18px", borderTop:"1px solid #1E293B" }}>
+          <div style={{ fontSize:10, color:"#334155", fontWeight:700, letterSpacing:1, textTransform:"uppercase" }}>Automotores 499</div>
+          <div style={{ fontSize:11, color:"#475569", marginTop:2 }}>📱 2604127531 – Alejandro</div>
+        </div>
+      )}
+      <button onClick={onToggle} style={{ position:"absolute", top:22, right:-13, width:26, height:26,
+        borderRadius:"50%", background:"#1E293B", border:"1px solid #334155",
+        color:"#64748B", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+        zIndex:20, boxShadow:"0 2px 8px #00000055", transition:"all .2s" }}>
+        <Icon name={collapsed?"chevronDown":"chevronDown"} size={13}/>
+      </button>
+    </div>
+  );
+};
+
+// ─── HEADER ───────────────────────────────────────────────────────────────────
+const Header = ({ user, onLogout, onToggleSidebar }) => {
+  const [dropOpen, setDropOpen] = useState(false);
+  return (
+    <div style={{ height:62, background:"linear-gradient(135deg,#0F172A,#1E293B)",
+      borderBottom:"1px solid #1E293B", display:"flex", alignItems:"center",
+      padding:"0 20px", gap:14, flexShrink:0, fontFamily:"'Montserrat',sans-serif" }}>
+      <button onClick={onToggleSidebar} style={{ background:"#1E293B", border:"1px solid #334155",
+        borderRadius:10, padding:9, color:"#94A3B8", cursor:"pointer", transition:"all .2s" }}>
+        <Icon name="menu" size={17}/>
+      </button>
+      <div style={{ flex:1, position:"relative", maxWidth:380 }}>
+        <input placeholder="Buscar autos, clientes..." style={{ width:"100%", background:"#0A0F1E",
+          border:"1px solid #334155", borderRadius:10, padding:"9px 12px 9px 36px", color:"#F9FAFB",
+          fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:"'Montserrat',sans-serif" }}/>
+        <div style={{ position:"absolute", left:11, top:"50%", transform:"translateY(-50%)", color:"#475569", pointerEvents:"none" }}>
+          <Icon name="search" size={15}/>
+        </div>
+      </div>
+      <div style={{ display:"flex", alignItems:"center", gap:10, marginLeft:"auto" }}>
+        <button style={{ background:"#1E293B", border:"1px solid #334155", borderRadius:10, padding:10,
+          color:"#94A3B8", cursor:"pointer", position:"relative" }}>
+          <Icon name="bell" size={17}/>
+          <span style={{ position:"absolute", top:7, right:7, width:7, height:7, borderRadius:"50%",
+            background:"#DC2626", boxShadow:"0 0 6px #DC2626" }}/>
+        </button>
+        <div style={{ position:"relative" }}>
+          <button onClick={() => setDropOpen(!dropOpen)} style={{ background:"#1E293B",
+            border:"1px solid #334155", borderRadius:10, padding:"7px 12px",
+            color:"#F9FAFB", cursor:"pointer", display:"flex", alignItems:"center", gap:8, transition:"all .2s" }}>
+            <div style={{ width:30, height:30, borderRadius:"50%",
+              background:"linear-gradient(135deg,#DC2626,#B91C1C)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              boxShadow:"0 0 12px #DC262240" }}>
+              <Icon name="user" size={16}/>
+            </div>
+            <span style={{ fontSize:13, fontWeight:700, fontFamily:"'Montserrat',sans-serif" }}>{user.name}</span>
+            <Icon name="chevronDown" size={13}/>
+          </button>
+          {dropOpen && (
+            <div style={{ position:"absolute", right:0, top:"calc(100% + 8px)", background:"#1E293B",
+              border:"1px solid #334155", borderRadius:14, minWidth:180,
+              boxShadow:"0 12px 40px #00000070", overflow:"hidden", zIndex:100 }}>
+              <div style={{ padding:"12px 16px", borderBottom:"1px solid #334155", fontSize:12, color:"#64748B" }}>
+                <div style={{ fontWeight:800, color:"#FFF", fontSize:14 }}>{user.name}</div>
+                <div>@{user.username}</div>
+              </div>
+              <button style={{ width:"100%", padding:"10px 16px", background:"transparent", border:"none",
+                color:"#F9FAFB", fontSize:13, cursor:"pointer", display:"flex", alignItems:"center",
+                gap:8, textAlign:"left", fontFamily:"'Montserrat',sans-serif" }}>
+                <Icon name="user" size={15}/>Mi perfil
+              </button>
+              <button onClick={onLogout} style={{ width:"100%", padding:"10px 16px", background:"transparent",
+                border:"none", color:"#F87171", fontSize:13, cursor:"pointer",
+                display:"flex", alignItems:"center", gap:8, textAlign:"left", fontFamily:"'Montserrat',sans-serif" }}>
+                <Icon name="logout" size={15}/>Cerrar sesión
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+const Dashboard = ({ user, autos, clientes, agenda, comisiones }) => {
+  const disponibles = autos.filter(a=>a.estado==="disponible").length;
+  const vendidosMes = autos.filter(a=>a.estado==="vendido").length;
+  const citasPendientes = agenda.filter(a=>a.estado==="pendiente").length;
+  const clientesActivos = clientes.filter(c=>c.estado!=="cerrado").length;
+  const comisionTotal = comisiones.filter(c=>!c.pagado).reduce((s,c)=>s+c.monto,0);
+
+  const cards = [
+    { icon:"car", label:"Autos disponibles", value:disponibles, color:"#3B82F6", bg:"#3B82F620" },
+    { icon:"check", label:"Vendidos este mes", value:vendidosMes, color:"#10B981", bg:"#10B98120" },
+    { icon:"calendar", label:"Citas pendientes", value:citasPendientes, color:"#F59E0B", bg:"#F59E0B20" },
+    { icon:"users", label:"Clientes activos", value:clientesActivos, color:"#8B5CF6", bg:"#8B5CF620" },
+    { icon:"dollar", label:"Comisión estimada", value:`$${(comisionTotal/1000).toFixed(0)}k`, color:"#EC4899", bg:"#EC489920" },
+    { icon:"chart", label:"Consultas recientes", value:12, color:"#14B8A6", bg:"#14B8A620" },
+  ];
+
+  const activity = [
+    { text:"Cliente consultó por Toyota Corolla", time:"hace 10 min", icon:"car", color:"#3B82F6" },
+    { text:"Nueva visita agendada – Laura Martínez", time:"hace 45 min", icon:"calendar", color:"#10B981" },
+    { text:"Auto reservado – VW Vento", time:"hace 2 h", icon:"star", color:"#F59E0B" },
+    { text:"Venta cerrada – Chevrolet Cruze", time:"hace 1 día", icon:"check", color:"#10B981" },
+    { text:"Diego Romero consultó por Ford Focus", time:"hace 1 día", icon:"users", color:"#8B5CF6" },
+  ];
+
+  return (
+    <div style={{ padding:24, maxWidth:1400 }}>
+      <div style={{ marginBottom:32 }}>
+        <h1 style={{ margin:"0 0 4px", fontSize:28, fontWeight:800, color:"#F9FAFB" }}>{user.greeting}</h1>
+        <p style={{ margin:0, color:"#64748B", fontSize:15 }}>Resumen del día – {new Date().toLocaleDateString("es-AR",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</p>
+      </div>
+
+      {/* Stats cards */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:16, marginBottom:32 }}>
+        {cards.map((c,i) => (
+          <div key={i} style={{ background:"#1E293B", borderRadius:16, padding:20, border:"1px solid #334155", cursor:"pointer", transition:"all .2s", position:"relative", overflow:"hidden" }}
+            onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
+            onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+            <div style={{ width:48, height:48, borderRadius:12, background:c.bg, display:"flex", alignItems:"center", justifyContent:"center", color:c.color, marginBottom:12 }}>
+              <Icon name={c.icon} size={24}/>
+            </div>
+            <div style={{ fontSize:28, fontWeight:800, color:"#F9FAFB" }}>{c.value}</div>
+            <div style={{ fontSize:13, color:"#94A3B8", marginTop:4 }}>{c.label}</div>
+            <div style={{ position:"absolute", top:-20, right:-20, width:80, height:80, borderRadius:"50%", background:c.bg }}/>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:24 }}>
+        {/* Activity */}
+        <div style={{ background:"#1E293B", borderRadius:16, padding:24, border:"1px solid #334155" }}>
+          <h3 style={{ margin:"0 0 20px", fontSize:16, fontWeight:700, color:"#F9FAFB" }}>Actividad reciente</h3>
+          <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+            {activity.map((a,i) => (
+              <div key={i} style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+                <div style={{ width:36, height:36, borderRadius:10, background:`${a.color}20`, color:a.color, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <Icon name={a.icon} size={16}/>
+                </div>
+                <div>
+                  <div style={{ fontSize:14, color:"#F9FAFB", fontWeight:500 }}>{a.text}</div>
+                  <div style={{ fontSize:12, color:"#64748B", marginTop:2 }}>{a.time}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick autos */}
+        <div style={{ background:"#1E293B", borderRadius:16, padding:24, border:"1px solid #334155" }}>
+          <h3 style={{ margin:"0 0 20px", fontSize:16, fontWeight:700, color:"#F9FAFB" }}>Autos recientes</h3>
+          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            {autos.slice(0,4).map(a => (
+              <div key={a.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", background:"#0A0F1E", borderRadius:12 }}>
+                <div style={{ width:40, height:40, borderRadius:10, background:"#2563EB20", display:"flex", alignItems:"center", justifyContent:"center", color:"#3B82F6" }}>
+                  <Icon name="car" size={20}/>
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#F9FAFB" }}>{a.marca} {a.modelo}</div>
+                  <div style={{ fontSize:12, color:"#64748B" }}>{a.anio} · {(a.km/1000).toFixed(0)}k km</div>
+                </div>
+                <div style={{ textAlign:"right" }}>
+                  <div style={{ fontSize:14, fontWeight:700, color:"#3B82F6" }}>${(a.precio/1000000).toFixed(1)}M</div>
+                  <StatusBadge status={a.estado}/>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── AUTO FORM ────────────────────────────────────────────────────────────────
+const AutoForm = ({ initial={}, onSave, onClose }) => {
+  const [d, setD] = useState({ marca:"", modelo:"", version:"", anio:"", km:"", color:"", motor:"", combustible:"Nafta", caja:"Manual", patente:"", precio:"", descripcion:"", estado:"disponible", propietario:"", telPropietario:"", comision:3, extras:[], fotos:[], docs:[], ...initial });
+  const upd = (k,v) => setD(p=>({...p,[k]:v}));
+  const toggleExtra = k => setD(p=>({ ...p, extras: p.extras.includes(k) ? p.extras.filter(e=>e!==k) : [...p.extras,k] }));
+  const handleFileChange = e => {
+    const files = Array.from(e.target.files);
+    files.forEach(f => {
+      const reader = new FileReader();
+      reader.onload = ev => setD(p=>({ ...p, fotos:[...p.fotos,{ url:ev.target.result, name:f.name }] }));
+      reader.readAsDataURL(f);
+    });
+  };
+  const extrasList = [
+    {k:"aire",l:"Aire acondicionado"},{k:"cuero",l:"Cuero"},{k:"pantalla",l:"Pantalla"},
+    {k:"camara",l:"Cámara"},{k:"sensores",l:"Sensores"},{k:"GPS",l:"GPS"},
+    {k:"techo",l:"Techo panorámico"},{k:"service",l:"Service oficial"}
+  ];
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:16 }}>
+        <Field label="Marca"><Input value={d.marca} onChange={v=>upd("marca",v)} placeholder="Toyota"/></Field>
+        <Field label="Modelo"><Input value={d.modelo} onChange={v=>upd("modelo",v)} placeholder="Corolla"/></Field>
+        <Field label="Versión"><Input value={d.version} onChange={v=>upd("version",v)} placeholder="XEI 2.0"/></Field>
+        <Field label="Año"><Input value={d.anio} onChange={v=>upd("anio",v)} type="number" placeholder="2022"/></Field>
+        <Field label="Kilómetros"><Input value={d.km} onChange={v=>upd("km",v)} type="number" placeholder="28000"/></Field>
+        <Field label="Color"><Input value={d.color} onChange={v=>upd("color",v)} placeholder="Blanco"/></Field>
+        <Field label="Motor"><Input value={d.motor} onChange={v=>upd("motor",v)} placeholder="2.0"/></Field>
+        <Field label="Combustible">
+          <Select value={d.combustible} onChange={v=>upd("combustible",v)}>
+            <option>Nafta</option><option>Diesel</option><option>GNC</option><option>Híbrido</option><option>Eléctrico</option>
+          </Select>
+        </Field>
+        <Field label="Caja">
+          <Select value={d.caja} onChange={v=>upd("caja",v)}>
+            <option>Manual</option><option>Automática</option><option>CVT</option>
+          </Select>
+        </Field>
+        <Field label="Patente"><Input value={d.patente} onChange={v=>upd("patente",v)} placeholder="AB123CD"/></Field>
+        <Field label="Precio ($)"><Input value={d.precio} onChange={v=>upd("precio",v)} type="number" placeholder="25000000"/></Field>
+        <Field label="Estado">
+          <Select value={d.estado} onChange={v=>upd("estado",v)}>
+            <option value="disponible">Disponible</option><option value="reservado">Reservado</option><option value="vendido">Vendido</option>
+          </Select>
+        </Field>
+        <Field label="Propietario"><Input value={d.propietario} onChange={v=>upd("propietario",v)} placeholder="Nombre del dueño"/></Field>
+        <Field label="Tel. propietario"><Input value={d.telPropietario} onChange={v=>upd("telPropietario",v)} placeholder="2604111222"/></Field>
+        <Field label="Comisión (%)"><Input value={d.comision} onChange={v=>upd("comision",v)} type="number" placeholder="3"/></Field>
+        <Field label="Descripción" col={2}><Textarea value={d.descripcion} onChange={v=>upd("descripcion",v)} placeholder="Descripción del vehículo..."/></Field>
+      </div>
+
+      {/* Extras */}
+      <div>
+        <label style={{ display:"block", fontSize:13, fontWeight:600, color:"#94A3B8", marginBottom:10 }}>Equipamiento</label>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8 }}>
+          {extrasList.map(e => (
+            <label key={e.k} style={{ display:"flex", alignItems:"center", gap:6, cursor:"pointer", fontSize:13, color: d.extras.includes(e.k) ? "#3B82F6" : "#9CA3AF", background: d.extras.includes(e.k) ? "#2563EB20" : "#111827", border: `1px solid ${d.extras.includes(e.k)?"#2563EB":"#374151"}`, borderRadius:8, padding:"8px 10px" }}>
+              <input type="checkbox" checked={d.extras.includes(e.k)} onChange={()=>toggleExtra(e.k)} style={{ accentColor:"#3B82F6" }}/>{e.l}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Fotos */}
+      <div>
+        <label style={{ display:"block", fontSize:13, fontWeight:600, color:"#94A3B8", marginBottom:10 }}>Fotos del vehículo</label>
+        <label style={{ display:"flex", alignItems:"center", gap:8, background:"#0A0F1E", border:"2px dashed #374151", borderRadius:12, padding:20, cursor:"pointer", color:"#64748B", justifyContent:"center" }}>
+          <Icon name="upload" size={20}/> Subir fotos (múltiples)
+          <input type="file" accept="image/*" multiple onChange={handleFileChange} style={{ display:"none" }}/>
+        </label>
+        {d.fotos.length > 0 && (
+          <div style={{ display:"flex", gap:8, marginTop:12, overflowX:"auto", paddingBottom:8 }}>
+            {d.fotos.map((f,i) => (
+              <div key={i} style={{ position:"relative", flexShrink:0 }}>
+                <img src={f.url} alt="" style={{ width:80, height:60, objectFit:"cover", borderRadius:8, border:"2px solid #374151" }}/>
+                <button onClick={()=>setD(p=>({...p,fotos:p.fotos.filter((_,j)=>j!==i)}))} style={{ position:"absolute", top:-6, right:-6, width:18, height:18, borderRadius:"50%", background:"#EF4444", border:"none", color:"#fff", cursor:"pointer", fontSize:10, display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ display:"flex", gap:12, justifyContent:"flex-end" }}>
+        <Btn onClick={onClose} variant="secondary">Cancelar</Btn>
+        <Btn onClick={()=>onSave(d)} variant="primary" icon="check">Guardar auto</Btn>
+      </div>
+    </div>
+  );
+};
+
+// ─── AUTO DETAIL ──────────────────────────────────────────────────────────────
+const AutoDetail = ({ auto, onClose, onEdit }) => {
+  const [photoIdx, setPhotoIdx] = useState(0);
+  const extras = { aire:"❄️ Aire acondicionado", cuero:"🪑 Cuero", pantalla:"📱 Pantalla", camara:"📷 Cámara", sensores:"📡 Sensores", GPS:"🗺️ GPS", techo:"🌅 Techo panorámico", service:"✅ Service oficial" };
+
+  return (
+    <div>
+      {/* Gallery */}
+      <div style={{ borderRadius:16, overflow:"hidden", marginBottom:24, position:"relative", background:"#0A0F1E", minHeight:220 }}>
+        {auto.fotos && auto.fotos.length > 0 ? (
+          <>
+            <img src={auto.fotos[photoIdx]?.url} alt="" style={{ width:"100%", height:260, objectFit:"cover" }}/>
+            <div style={{ position:"absolute", bottom:12, left:"50%", transform:"translateX(-50%)", display:"flex", gap:6 }}>
+              {auto.fotos.map((_,i) => (
+                <button key={i} onClick={()=>setPhotoIdx(i)} style={{ width:i===photoIdx?24:8, height:8, borderRadius:4, background:i===photoIdx?"#3B82F6":"#ffffff80", border:"none", cursor:"pointer", transition:"all .2s" }}/>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div style={{ height:220, display:"flex", alignItems:"center", justifyContent:"center", color:"#475569" }}>
+            <div style={{ textAlign:"center" }}><Icon name="car" size={60}/><div style={{ marginTop:8 }}>Sin fotos</div></div>
+          </div>
+        )}
+      </div>
+
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginBottom:20 }}>
+        <div>
+          <h2 style={{ margin:"0 0 4px", fontSize:24, fontWeight:800, color:"#F9FAFB" }}>{auto.marca} {auto.modelo}</h2>
+          <div style={{ color:"#94A3B8", marginBottom:12 }}>{auto.version}</div>
+          <div style={{ fontSize:32, fontWeight:900, color:"#3B82F6", marginBottom:12 }}>${Number(auto.precio).toLocaleString("es-AR")}</div>
+          <StatusBadge status={auto.estado}/>
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+          {[["📅 Año",auto.anio],["🛣️ Km",`${Number(auto.km).toLocaleString()} km`],["🎨 Color",auto.color],["⛽ Combustible",auto.combustible],["⚙️ Caja",auto.caja],["🔧 Motor",auto.motor]].map(([k,v]) => (
+            <div key={k} style={{ background:"#0A0F1E", borderRadius:10, padding:"8px 12px" }}>
+              <div style={{ fontSize:11, color:"#64748B" }}>{k.split(" ")[0]} {k.split(" ")[1]}</div>
+              <div style={{ fontSize:14, fontWeight:600, color:"#F9FAFB" }}>{v}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {auto.descripcion && <div style={{ background:"#0A0F1E", borderRadius:12, padding:16, marginBottom:20, color:"#D1D5DB", fontSize:14, lineHeight:1.7 }}>{auto.descripcion}</div>}
+
+      {auto.extras?.length > 0 && (
+        <div style={{ marginBottom:20 }}>
+          <div style={{ fontSize:13, fontWeight:600, color:"#94A3B8", marginBottom:10 }}>Equipamiento</div>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+            {auto.extras.map(e=><span key={e} style={{ background:"#2563EB15", border:"1px solid #2563EB30", borderRadius:8, padding:"4px 12px", fontSize:13, color:"#93C5FD" }}>{extras[e]||e}</span>)}
+          </div>
+        </div>
+      )}
+
+      <div style={{ background:"#0A0F1E", borderRadius:12, padding:16, marginBottom:20 }}>
+        <div style={{ fontSize:13, fontWeight:600, color:"#94A3B8", marginBottom:12 }}>Información del propietario</div>
+        <div style={{ display:"flex", gap:24 }}>
+          <div><div style={{ fontSize:11, color:"#64748B" }}>Nombre</div><div style={{ fontSize:14, color:"#F9FAFB" }}>{auto.propietario}</div></div>
+          <div><div style={{ fontSize:11, color:"#64748B" }}>Teléfono</div><div style={{ fontSize:14, color:"#F9FAFB" }}>{auto.telPropietario}</div></div>
+          <div><div style={{ fontSize:11, color:"#64748B" }}>Comisión</div><div style={{ fontSize:14, color:"#3B82F6", fontWeight:700 }}>{auto.comision}%</div></div>
+        </div>
+      </div>
+
+      <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+        <Btn onClick={()=>{ const m=`Hola! Consulto por el ${auto.marca} ${auto.modelo} ${auto.anio} en $${Number(auto.precio).toLocaleString()}`; window.open(`https://wa.me/542604127531?text=${encodeURIComponent(m)}`,"_blank"); }} variant="success" icon="whatsapp">WhatsApp</Btn>
+        <Btn onClick={onEdit} variant="secondary" icon="edit">Editar</Btn>
+        <Btn onClick={onClose} variant="ghost">Cerrar</Btn>
+      </div>
+    </div>
+  );
+};
+
+// ─── MÓDULO AUTOS ─────────────────────────────────────────────────────────────
+const ModuloAutos = ({ autos, setAutos }) => {
+  const [search, setSearch] = useState("");
+  const [filterMarca, setFilterMarca] = useState("");
+  const [filterEstado, setFilterEstado] = useState("");
+  const [sortBy, setSortBy] = useState("recientes");
+  const [showForm, setShowForm] = useState(false);
+  const [editAuto, setEditAuto] = useState(null);
+  const [viewAuto, setViewAuto] = useState(null);
+
+  const marcas = [...new Set(autos.map(a=>a.marca))];
+  let filtered = autos.filter(a => {
+    const q = search.toLowerCase();
+    return (!q || `${a.marca} ${a.modelo} ${a.patente}`.toLowerCase().includes(q))
+      && (!filterMarca || a.marca === filterMarca)
+      && (!filterEstado || a.estado === filterEstado);
+  });
+  if (sortBy==="menor") filtered.sort((a,b)=>a.precio-b.precio);
+  else if (sortBy==="mayor") filtered.sort((a,b)=>b.precio-a.precio);
+  else filtered.sort((a,b)=>b.id-a.id);
+
+  const saveAuto = d => {
+    if (editAuto) {
+      setAutos(autos.map(a=>a.id===editAuto.id?{...a,...d}:a));
+    } else {
+      setAutos([...autos, { ...d, id:Date.now() }]);
+    }
+    setShowForm(false); setEditAuto(null);
+  };
+
+  const deleteAuto = id => { if (confirm("¿Eliminar auto?")) setAutos(autos.filter(a=>a.id!==id)); };
+  const markSold = id => setAutos(autos.map(a=>a.id===id?{...a,estado:"vendido"}:a));
+
+  return (
+    <div style={{ padding:24 }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:24, flexWrap:"wrap", gap:12 }}>
+        <h1 style={{ margin:0, fontSize:24, fontWeight:800, color:"#F9FAFB" }}>🚗 Autos</h1>
+        <Btn onClick={()=>{setEditAuto(null);setShowForm(true);}} variant="primary" icon="plus">Nuevo Auto</Btn>
+      </div>
+
+      {/* Filters */}
+      <div style={{ display:"flex", gap:10, marginBottom:20, flexWrap:"wrap" }}>
+        <div style={{ position:"relative", flex:1, minWidth:200 }}>
+          <div style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", color:"#475569" }}><Icon name="search" size={16}/></div>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar por marca, modelo, patente..."
+            style={{ width:"100%", background:"#1E293B", border:"1px solid #334155", borderRadius:10, padding:"10px 12px 10px 36px", color:"#F9FAFB", fontSize:14, outline:"none", boxSizing:"border-box" }}/>
+        </div>
+        <select value={filterMarca} onChange={e=>setFilterMarca(e.target.value)} style={{ background:"#1E293B", border:"1px solid #334155", borderRadius:10, padding:"10px 12px", color:"#F9FAFB", fontSize:14 }}>
+          <option value="">Todas las marcas</option>
+          {marcas.map(m=><option key={m}>{m}</option>)}
+        </select>
+        <select value={filterEstado} onChange={e=>setFilterEstado(e.target.value)} style={{ background:"#1E293B", border:"1px solid #334155", borderRadius:10, padding:"10px 12px", color:"#F9FAFB", fontSize:14 }}>
+          <option value="">Todos los estados</option>
+          <option value="disponible">Disponible</option>
+          <option value="reservado">Reservado</option>
+          <option value="vendido">Vendido</option>
+        </select>
+        <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{ background:"#1E293B", border:"1px solid #334155", borderRadius:10, padding:"10px 12px", color:"#F9FAFB", fontSize:14 }}>
+          <option value="recientes">Más recientes</option>
+          <option value="menor">Menor precio</option>
+          <option value="mayor">Mayor precio</option>
+        </select>
+      </div>
+
+      {/* Grid */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:16 }}>
+        {filtered.map(auto => (
+          <div key={auto.id} style={{ background:"#1E293B", borderRadius:16, border:"1px solid #334155", overflow:"hidden", transition:"all .2s" }}
+            onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-4px)";e.currentTarget.style.boxShadow="0 12px 30px #00000050";}}
+            onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";}}>
+            {/* Photo */}
+            <div style={{ height:160, background:"#0A0F1E", display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }}>
+              {auto.fotos && auto.fotos.length > 0
+                ? <img src={auto.fotos[0].url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                : <div style={{ color:"#334155" }}><Icon name="car" size={48}/></div>}
+              <div style={{ position:"absolute", top:10, right:10 }}><StatusBadge status={auto.estado}/></div>
+            </div>
+            <div style={{ padding:16 }}>
+              <div style={{ fontSize:18, fontWeight:700, color:"#F9FAFB", marginBottom:4 }}>{auto.marca} {auto.modelo}</div>
+              <div style={{ fontSize:13, color:"#64748B", marginBottom:8 }}>{auto.version} · {auto.anio}</div>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:12 }}>
+                <span style={{ fontSize:13, color:"#94A3B8" }}>🛣️ {Number(auto.km).toLocaleString()} km</span>
+                <span style={{ fontSize:13, color:"#94A3B8" }}>🎨 {auto.color}</span>
+              </div>
+              <div style={{ fontSize:22, fontWeight:800, color:"#3B82F6", marginBottom:16 }}>${Number(auto.precio).toLocaleString("es-AR")}</div>
+              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                <Btn onClick={()=>setViewAuto(auto)} variant="primary" size="sm" icon="eye">Ver</Btn>
+                <Btn onClick={()=>{setEditAuto(auto);setShowForm(true);}} variant="secondary" size="sm" icon="edit">Editar</Btn>
+                <Btn onClick={()=>{ const m=`${auto.marca} ${auto.modelo} ${auto.anio} - $${Number(auto.precio).toLocaleString()} - Automotores499 📱2604127531`; navigator.clipboard?.writeText(m); alert("Copiado!"); }} variant="ghost" size="sm" icon="share">Compartir</Btn>
+                {auto.estado!=="vendido" && <Btn onClick={()=>markSold(auto.id)} variant="success" size="sm">Vendido</Btn>}
+                <Btn onClick={()=>deleteAuto(auto.id)} variant="danger" size="sm" icon="trash"/>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {filtered.length===0 && (
+        <div style={{ textAlign:"center", padding:60, color:"#475569" }}>
+          <Icon name="car" size={60}/><div style={{ marginTop:12, fontSize:18 }}>No se encontraron autos</div>
+        </div>
+      )}
+
+      <Modal open={showForm} onClose={()=>{setShowForm(false);setEditAuto(null);}} title={editAuto?"Editar Auto":"Nuevo Auto"} wide>
+        <AutoForm initial={editAuto} onSave={saveAuto} onClose={()=>{setShowForm(false);setEditAuto(null);}}/>
+      </Modal>
+
+      <Modal open={!!viewAuto} onClose={()=>setViewAuto(null)} title={viewAuto?`${viewAuto.marca} ${viewAuto.modelo}`:""} wide>
+        {viewAuto && <AutoDetail auto={viewAuto} onClose={()=>setViewAuto(null)} onEdit={()=>{setEditAuto(viewAuto);setViewAuto(null);setShowForm(true);}}/>}
+      </Modal>
+    </div>
+  );
+};
+
+// ─── MÓDULO CLIENTES ──────────────────────────────────────────────────────────
+const ModuloClientes = ({ clientes, setClientes, autos }) => {
+  const [search, setSearch] = useState("");
+  const [filterEstado, setFilterEstado] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [viewCliente, setViewCliente] = useState(null);
+  const [form, setForm] = useState({ nombre:"", telefono:"", email:"", ciudad:"", notas:"", estado:"nuevo", interesados:[], timeline:[], ultimoContacto: new Date().toISOString().split("T")[0] });
+
+  const filtered = clientes.filter(c => {
+    const q = search.toLowerCase();
+    return (!q || `${c.nombre} ${c.telefono} ${c.ciudad}`.toLowerCase().includes(q))
+      && (!filterEstado || c.estado===filterEstado);
+  });
+
+  const saveCliente = () => {
+    if (!form.nombre) return;
+    setClientes([...clientes, { ...form, id:Date.now() }]);
+    setShowForm(false);
+    setForm({ nombre:"", telefono:"", email:"", ciudad:"", notas:"", estado:"nuevo", interesados:[], timeline:[], ultimoContacto: new Date().toISOString().split("T")[0] });
+  };
+
+  const estadoColor = { nuevo:"#8B5CF6", interesado:"#3B82F6", visita:"#F59E0B", reservado:"#EC4899", vendido:"#10B981", cerrado:"#6B7280" };
+
+  return (
+    <div style={{ padding:24 }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:24, flexWrap:"wrap", gap:12 }}>
+        <h1 style={{ margin:0, fontSize:24, fontWeight:800, color:"#F9FAFB" }}>👥 Clientes</h1>
+        <Btn onClick={()=>setShowForm(true)} variant="primary" icon="plus">Nuevo Cliente</Btn>
+      </div>
+
+      <div style={{ display:"flex", gap:10, marginBottom:20, flexWrap:"wrap" }}>
+        <div style={{ position:"relative", flex:1, minWidth:200 }}>
+          <div style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", color:"#475569" }}><Icon name="search" size={16}/></div>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar clientes..."
+            style={{ width:"100%", background:"#1E293B", border:"1px solid #334155", borderRadius:10, padding:"10px 12px 10px 36px", color:"#F9FAFB", fontSize:14, outline:"none", boxSizing:"border-box" }}/>
+        </div>
+        <select value={filterEstado} onChange={e=>setFilterEstado(e.target.value)} style={{ background:"#1E293B", border:"1px solid #334155", borderRadius:10, padding:"10px 12px", color:"#F9FAFB", fontSize:14 }}>
+          <option value="">Todos los estados</option>
+          {Object.keys(estadoColor).map(s=><option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>)}
+        </select>
+      </div>
+
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:16 }}>
+        {filtered.map(c => (
+          <div key={c.id} style={{ background:"#1E293B", borderRadius:16, padding:20, border:"1px solid #334155", cursor:"pointer", transition:"all .2s" }}
+            onClick={()=>setViewCliente(c)}
+            onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
+            onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+            <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:12 }}>
+              <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                <div style={{ width:44, height:44, borderRadius:"50%", background:`${estadoColor[c.estado]||"#374151"}30`, color:estadoColor[c.estado]||"#9CA3AF", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:18 }}>
+                  {c.nombre[0]}
+                </div>
+                <div>
+                  <div style={{ fontSize:16, fontWeight:700, color:"#F9FAFB" }}>{c.nombre}</div>
+                  <div style={{ fontSize:13, color:"#64748B" }}>{c.ciudad}</div>
+                </div>
+              </div>
+              <StatusBadge status={c.estado}/>
+            </div>
+            <div style={{ display:"flex", gap:16, fontSize:13, color:"#94A3B8" }}>
+              <span>📱 {c.telefono}</span>
+            </div>
+            <div style={{ marginTop:10, fontSize:12, color:"#475569" }}>Último contacto: {c.ultimoContacto}</div>
+            <div style={{ display:"flex", gap:8, marginTop:12 }} onClick={e=>e.stopPropagation()}>
+              <Btn onClick={()=>window.open(`https://wa.me/54${c.telefono.replace(/\D/g,"")}?text=Hola ${c.nombre}!`,"_blank")} variant="success" size="sm" icon="whatsapp">WA</Btn>
+              <Btn onClick={()=>window.open(`tel:${c.telefono}`)} variant="secondary" size="sm" icon="phone">Llamar</Btn>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {filtered.length===0 && (
+        <div style={{ textAlign:"center", padding:60, color:"#475569" }}>
+          <Icon name="users" size={60}/><div style={{ marginTop:12 }}>No hay clientes</div>
+        </div>
+      )}
+
+      <Modal open={showForm} onClose={()=>setShowForm(false)} title="Nuevo Cliente">
+        <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+            <Field label="Nombre"><Input value={form.nombre} onChange={v=>setForm(p=>({...p,nombre:v}))} placeholder="Roberto Fernández"/></Field>
+            <Field label="Teléfono"><Input value={form.telefono} onChange={v=>setForm(p=>({...p,telefono:v}))} placeholder="2604100200"/></Field>
+            <Field label="Email"><Input value={form.email} onChange={v=>setForm(p=>({...p,email:v}))} placeholder="cliente@mail.com"/></Field>
+            <Field label="Ciudad"><Input value={form.ciudad} onChange={v=>setForm(p=>({...p,ciudad:v}))} placeholder="Mendoza"/></Field>
+            <Field label="Estado">
+              <Select value={form.estado} onChange={v=>setForm(p=>({...p,estado:v}))}>
+                {Object.keys(estadoColor).map(s=><option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>)}
+              </Select>
+            </Field>
+          </div>
+          <Field label="Notas"><Textarea value={form.notas} onChange={v=>setForm(p=>({...p,notas:v}))} placeholder="Observaciones sobre el cliente..."/></Field>
+          <div style={{ display:"flex", gap:12, justifyContent:"flex-end" }}>
+            <Btn onClick={()=>setShowForm(false)} variant="secondary">Cancelar</Btn>
+            <Btn onClick={saveCliente} variant="primary" icon="check">Guardar</Btn>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={!!viewCliente} onClose={()=>setViewCliente(null)} title={viewCliente?.nombre||""}>
+        {viewCliente && (
+          <div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:20 }}>
+              {[["📱 Teléfono",viewCliente.telefono],["📧 Email",viewCliente.email],["📍 Ciudad",viewCliente.ciudad],["📅 Último contacto",viewCliente.ultimoContacto]].map(([k,v])=>(
+                <div key={k} style={{ background:"#0A0F1E", borderRadius:10, padding:"10px 14px" }}>
+                  <div style={{ fontSize:11, color:"#64748B" }}>{k}</div>
+                  <div style={{ fontSize:14, color:"#F9FAFB" }}>{v||"-"}</div>
+                </div>
+              ))}
+            </div>
+            {viewCliente.notas && <div style={{ background:"#0A0F1E", borderRadius:10, padding:"12px 14px", marginBottom:20, color:"#D1D5DB", fontSize:14 }}>{viewCliente.notas}</div>}
+            {viewCliente.timeline?.length > 0 && (
+              <div style={{ marginBottom:20 }}>
+                <div style={{ fontSize:13, fontWeight:600, color:"#94A3B8", marginBottom:12 }}>Timeline</div>
+                {viewCliente.timeline.map((t,i) => (
+                  <div key={i} style={{ display:"flex", gap:12, marginBottom:10 }}>
+                    <div style={{ width:8, height:8, borderRadius:"50%", background:"#3B82F6", marginTop:6, flexShrink:0 }}/>
+                    <div>
+                      <div style={{ fontSize:12, color:"#64748B" }}>{t.fecha}</div>
+                      <div style={{ fontSize:14, color:"#F9FAFB" }}>{t.accion}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ display:"flex", gap:10 }}>
+              <Btn onClick={()=>window.open(`https://wa.me/54${viewCliente.telefono.replace(/\D/g,"")}?text=Hola ${viewCliente.nombre}!`,"_blank")} variant="success" icon="whatsapp">WhatsApp</Btn>
+              <Btn onClick={()=>window.open(`tel:${viewCliente.telefono}`)} variant="secondary" icon="phone">Llamar</Btn>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+};
+
+// ─── MÓDULO AGENDA ────────────────────────────────────────────────────────────
+const ModuloAgenda = ({ agenda, setAgenda }) => {
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ cliente:"", auto:"", fecha:"", hora:"", ubicacion:"Agencia", nota:"", estado:"pendiente" });
+
+  const colorMap = { pendiente:"#3B82F6", confirmado:"#10B981", reprogramado:"#F59E0B", cancelado:"#EF4444" };
+
+  const saveCita = () => {
+    if (!form.cliente || !form.fecha) return;
+    setAgenda([...agenda, { ...form, id:Date.now() }]);
+    setShowForm(false);
+    setForm({ cliente:"", auto:"", fecha:"", hora:"", ubicacion:"Agencia", nota:"", estado:"pendiente" });
+  };
+
+  const updateEstado = (id, estado) => setAgenda(agenda.map(a=>a.id===id?{...a,estado}:a));
+  const deleteCita = id => { if(confirm("¿Eliminar cita?")) setAgenda(agenda.filter(a=>a.id!==id)); };
+
+  const today = new Date().toISOString().split("T")[0];
+  const upcoming = agenda.filter(a=>a.fecha >= today).sort((a,b)=>a.fecha.localeCompare(b.fecha)||a.hora.localeCompare(b.hora));
+  const past = agenda.filter(a=>a.fecha < today).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+
+  return (
+    <div style={{ padding:24 }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:24 }}>
+        <h1 style={{ margin:0, fontSize:24, fontWeight:800, color:"#F9FAFB" }}>📅 Agenda</h1>
+        <Btn onClick={()=>setShowForm(true)} variant="primary" icon="plus">Nueva Cita</Btn>
+      </div>
+
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
+        {/* Upcoming */}
+        <div>
+          <h3 style={{ fontSize:16, fontWeight:700, color:"#F9FAFB", marginBottom:16 }}>Próximas citas ({upcoming.length})</h3>
+          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            {upcoming.map(c=>(
+              <div key={c.id} style={{ background:"#1E293B", borderRadius:14, padding:16, border:`1px solid ${colorMap[c.estado]}40`, borderLeft:`4px solid ${colorMap[c.estado]}` }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
+                  <div>
+                    <div style={{ fontSize:16, fontWeight:700, color:"#F9FAFB" }}>{c.cliente}</div>
+                    <div style={{ fontSize:13, color:"#94A3B8" }}>🚗 {c.auto}</div>
+                  </div>
+                  <StatusBadge status={c.estado}/>
+                </div>
+                <div style={{ display:"flex", gap:16, fontSize:13, color:"#64748B", marginBottom:10 }}>
+                  <span>📅 {c.fecha}</span>
+                  <span>🕐 {c.hora}</span>
+                  <span>📍 {c.ubicacion}</span>
+                </div>
+                {c.nota && <div style={{ fontSize:13, color:"#94A3B8", marginBottom:10 }}>📝 {c.nota}</div>}
+                <div style={{ display:"flex", gap:8 }}>
+                  <Btn onClick={()=>updateEstado(c.id,"confirmado")} variant="success" size="sm">Confirmar</Btn>
+                  <Btn onClick={()=>updateEstado(c.id,"reprogramado")} variant="secondary" size="sm">Reprogramar</Btn>
+                  <Btn onClick={()=>updateEstado(c.id,"cancelado")} variant="danger" size="sm">Cancelar</Btn>
+                  <Btn onClick={()=>deleteCita(c.id)} variant="ghost" size="sm" icon="trash"/>
+                </div>
+              </div>
+            ))}
+            {upcoming.length===0 && <div style={{ color:"#475569", textAlign:"center", padding:30 }}>No hay citas próximas</div>}
+          </div>
+        </div>
+
+        {/* Past */}
+        <div>
+          <h3 style={{ fontSize:16, fontWeight:700, color:"#F9FAFB", marginBottom:16 }}>Historial ({past.length})</h3>
+          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            {past.slice(0,5).map(c=>(
+              <div key={c.id} style={{ background:"#1E293B", borderRadius:14, padding:16, border:"1px solid #334155", opacity:0.7 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <div>
+                    <div style={{ fontSize:14, fontWeight:600, color:"#F9FAFB" }}>{c.cliente}</div>
+                    <div style={{ fontSize:12, color:"#64748B" }}>🚗 {c.auto} · {c.fecha} {c.hora}</div>
+                  </div>
+                  <StatusBadge status={c.estado}/>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <Modal open={showForm} onClose={()=>setShowForm(false)} title="Nueva Cita">
+        <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+            <Field label="Cliente"><Input value={form.cliente} onChange={v=>setForm(p=>({...p,cliente:v}))} placeholder="Nombre del cliente"/></Field>
+            <Field label="Auto"><Input value={form.auto} onChange={v=>setForm(p=>({...p,auto:v}))} placeholder="Toyota Corolla"/></Field>
+            <Field label="Fecha"><Input value={form.fecha} onChange={v=>setForm(p=>({...p,fecha:v}))} type="date"/></Field>
+            <Field label="Hora"><Input value={form.hora} onChange={v=>setForm(p=>({...p,hora:v}))} type="time"/></Field>
+            <Field label="Ubicación"><Input value={form.ubicacion} onChange={v=>setForm(p=>({...p,ubicacion:v}))} placeholder="Agencia"/></Field>
+            <Field label="Estado">
+              <Select value={form.estado} onChange={v=>setForm(p=>({...p,estado:v}))}>
+                <option value="pendiente">Pendiente</option>
+                <option value="confirmado">Confirmado</option>
+                <option value="reprogramado">Reprogramado</option>
+                <option value="cancelado">Cancelado</option>
+              </Select>
+            </Field>
+          </div>
+          <Field label="Nota"><Textarea value={form.nota} onChange={v=>setForm(p=>({...p,nota:v}))} placeholder="Observaciones..."/></Field>
+          <div style={{ display:"flex", gap:12, justifyContent:"flex-end" }}>
+            <Btn onClick={()=>setShowForm(false)} variant="secondary">Cancelar</Btn>
+            <Btn onClick={saveCita} variant="primary" icon="check">Guardar cita</Btn>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+};
+
+// ─── MÓDULO COMISIONES ────────────────────────────────────────────────────────
+const ModuloComisiones = ({ comisiones, setComisiones }) => {
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ auto:"", precio:"", porcentaje:3, fecha:new Date().toISOString().split("T")[0], pagado:false });
+
+  const pendiente = comisiones.filter(c=>!c.pagado).reduce((s,c)=>s+c.monto,0);
+  const cobrado = comisiones.filter(c=>c.pagado).reduce((s,c)=>s+c.monto,0);
+  const total = pendiente + cobrado;
+
+  const saveComision = () => {
+    if (!form.auto || !form.precio) return;
+    const monto = (Number(form.precio) * Number(form.porcentaje)) / 100;
+    setComisiones([...comisiones, { ...form, monto, id:Date.now() }]);
+    setShowForm(false);
+    setForm({ auto:"", precio:"", porcentaje:3, fecha:new Date().toISOString().split("T")[0], pagado:false });
+  };
+
+  const togglePago = id => setComisiones(comisiones.map(c=>c.id===id?{...c,pagado:!c.pagado}:c));
+  const del = id => { if(confirm("¿Eliminar?")) setComisiones(comisiones.filter(c=>c.id!==id)); };
+
+  return (
+    <div style={{ padding:24 }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:24 }}>
+        <h1 style={{ margin:0, fontSize:24, fontWeight:800, color:"#F9FAFB" }}>💵 Comisiones</h1>
+        <Btn onClick={()=>setShowForm(true)} variant="primary" icon="plus">Nueva Comisión</Btn>
+      </div>
+
+      {/* Summary */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16, marginBottom:28 }}>
+        {[
+          { label:"Pendiente de cobro", value:pendiente, color:"#F59E0B" },
+          { label:"Cobrado", value:cobrado, color:"#10B981" },
+          { label:"Total acumulado", value:total, color:"#3B82F6" },
+        ].map((s,i) => (
+          <div key={i} style={{ background:"#1E293B", borderRadius:16, padding:20, border:`1px solid ${s.color}30` }}>
+            <div style={{ fontSize:12, color:"#94A3B8", marginBottom:8 }}>{s.label}</div>
+            <div style={{ fontSize:24, fontWeight:800, color:s.color }}>${s.value.toLocaleString("es-AR")}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div style={{ background:"#1E293B", borderRadius:16, border:"1px solid #334155", overflow:"hidden" }}>
+        <table style={{ width:"100%", borderCollapse:"collapse" }}>
+          <thead>
+            <tr style={{ background:"#111827" }}>
+              {["Auto","Precio","Comisión%","Monto","Fecha","Estado","Acción"].map(h=>(
+                <th key={h} style={{ padding:"12px 16px", textAlign:"left", fontSize:12, fontWeight:700, color:"#64748B", textTransform:"uppercase" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {comisiones.map(c=>(
+              <tr key={c.id} style={{ borderTop:"1px solid #1E293B" }}>
+                <td style={{ padding:"14px 16px", color:"#F9FAFB", fontWeight:600 }}>{c.auto}</td>
+                <td style={{ padding:"14px 16px", color:"#94A3B8" }}>${Number(c.precio).toLocaleString()}</td>
+                <td style={{ padding:"14px 16px", color:"#94A3B8" }}>{c.porcentaje}%</td>
+                <td style={{ padding:"14px 16px", color:"#3B82F6", fontWeight:700 }}>${c.monto.toLocaleString()}</td>
+                <td style={{ padding:"14px 16px", color:"#94A3B8" }}>{c.fecha}</td>
+                <td style={{ padding:"14px 16px" }}><StatusBadge status={c.pagado?"confirmado":"pendiente"}/></td>
+                <td style={{ padding:"14px 16px" }}>
+                  <div style={{ display:"flex", gap:6 }}>
+                    <Btn onClick={()=>togglePago(c.id)} variant={c.pagado?"secondary":"success"} size="sm">{c.pagado?"Pendiente":"Marcar cobrado"}</Btn>
+                    <Btn onClick={()=>del(c.id)} variant="ghost" size="sm" icon="trash"/>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {comisiones.length===0 && <div style={{ textAlign:"center", padding:40, color:"#475569" }}>No hay comisiones registradas</div>}
+      </div>
+
+      <Modal open={showForm} onClose={()=>setShowForm(false)} title="Nueva Comisión">
+        <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+            <Field label="Auto"><Input value={form.auto} onChange={v=>setForm(p=>({...p,auto:v}))} placeholder="Toyota Corolla XEI"/></Field>
+            <Field label="Precio de venta"><Input value={form.precio} onChange={v=>setForm(p=>({...p,precio:v}))} type="number" placeholder="25000000"/></Field>
+            <Field label="Comisión (%)"><Input value={form.porcentaje} onChange={v=>setForm(p=>({...p,porcentaje:v}))} type="number" placeholder="3"/></Field>
+            <Field label="Fecha"><Input value={form.fecha} onChange={v=>setForm(p=>({...p,fecha:v}))} type="date"/></Field>
+          </div>
+          {form.precio && form.porcentaje && (
+            <div style={{ background:"#0A0F1E", borderRadius:10, padding:14, color:"#10B981", fontWeight:700, fontSize:18 }}>
+              Comisión estimada: ${((Number(form.precio)*Number(form.porcentaje))/100).toLocaleString("es-AR")}
+            </div>
+          )}
+          <div style={{ display:"flex", gap:12, justifyContent:"flex-end" }}>
+            <Btn onClick={()=>setShowForm(false)} variant="secondary">Cancelar</Btn>
+            <Btn onClick={saveComision} variant="primary" icon="check">Guardar</Btn>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+};
+
+// ─── MÓDULO DOCUMENTOS ────────────────────────────────────────────────────────
+const ModuloDocumentos = ({ autos }) => {
+  const [search, setSearch] = useState("");
+  const filtered = autos.filter(a => {
+    const q = search.toLowerCase();
+    return !q || `${a.marca} ${a.modelo} ${a.patente}`.toLowerCase().includes(q);
+  });
+  const docTypes = [
+    { k:"cedula", label:"Cédula verde", icon:"📋" },
+    { k:"seguro", label:"Seguro", icon:"🛡️" },
+    { k:"verificacion", label:"Verificación", icon:"✅" },
+    { k:"pdf", label:"Documentos PDF", icon:"📄" },
+  ];
+  return (
+    <div style={{ padding:24 }}>
+      <h1 style={{ margin:"0 0 24px", fontSize:24, fontWeight:800, color:"#F9FAFB" }}>📂 Documentos</h1>
+      <div style={{ position:"relative", maxWidth:400, marginBottom:24 }}>
+        <div style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", color:"#475569" }}><Icon name="search" size={16}/></div>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar por patente, marca o modelo..."
+          style={{ width:"100%", background:"#1E293B", border:"1px solid #334155", borderRadius:10, padding:"10px 12px 10px 36px", color:"#F9FAFB", fontSize:14, outline:"none", boxSizing:"border-box" }}/>
+      </div>
+      <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+        {filtered.map(auto=>(
+          <div key={auto.id} style={{ background:"#1E293B", borderRadius:16, border:"1px solid #334155", overflow:"hidden" }}>
+            <div style={{ padding:"16px 20px", display:"flex", alignItems:"center", gap:12, borderBottom:"1px solid #1E293B", background:"#111827" }}>
+              <div style={{ width:40, height:40, borderRadius:10, background:"#2563EB20", display:"flex", alignItems:"center", justifyContent:"center", color:"#3B82F6" }}>
+                <Icon name="car" size={20}/>
+              </div>
+              <div>
+                <div style={{ fontSize:16, fontWeight:700, color:"#F9FAFB" }}>{auto.marca} {auto.modelo} {auto.version}</div>
+                <div style={{ fontSize:13, color:"#64748B" }}>Patente: {auto.patente} · {auto.anio}</div>
+              </div>
+            </div>
+            <div style={{ padding:16, display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))", gap:12 }}>
+              {docTypes.map(dt=>(
+                <label key={dt.k} style={{ display:"flex", alignItems:"center", gap:8, background:"#0A0F1E", borderRadius:12, padding:"12px 16px", cursor:"pointer", border:"1px dashed #374151", color:"#64748B", fontSize:13 }}>
+                  <span style={{ fontSize:20 }}>{dt.icon}</span>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:600, color:"#94A3B8" }}>{dt.label}</div>
+                    <div style={{ fontSize:11, color:"#475569" }}>Subir archivo</div>
+                  </div>
+                  <input type="file" style={{ display:"none" }}/>
+                </label>
+              ))}
+            </div>
+            {auto.docs && auto.docs.length > 0 && (
+              <div style={{ padding:"0 16px 16px" }}>
+                {auto.docs.map((d,i)=>(
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", background:"#0A0F1E", borderRadius:8, marginTop:8 }}>
+                    <Icon name="folder" size={16}/><span style={{ fontSize:13, color:"#F9FAFB" }}>{d.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ─── MÓDULO REPORTES ──────────────────────────────────────────────────────────
+const ModuloReportes = ({ autos, clientes, agenda, comisiones }) => {
+  const byMarca = autos.reduce((acc,a)=>{ acc[a.marca]=(acc[a.marca]||0)+1; return acc; },{});
+  const byEstado = autos.reduce((acc,a)=>{ acc[a.estado]=(acc[a.estado]||0)+1; return acc; },{});
+  const comTotal = comisiones.reduce((s,c)=>s+c.monto,0);
+
+  const stats = [
+    { label:"Total de autos", value:autos.length, icon:"car", color:"#3B82F6" },
+    { label:"Autos disponibles", value:autos.filter(a=>a.estado==="disponible").length, icon:"check", color:"#10B981" },
+    { label:"Autos vendidos", value:autos.filter(a=>a.estado==="vendido").length, icon:"dollar", color:"#F59E0B" },
+    { label:"Total clientes", value:clientes.length, icon:"users", color:"#8B5CF6" },
+    { label:"Citas agendadas", value:agenda.length, icon:"calendar", color:"#EC4899" },
+    { label:"Comisiones totales", value:`$${(comTotal/1000).toFixed(0)}k`, icon:"chart", color:"#14B8A6" },
+  ];
+
+  return (
+    <div style={{ padding:24 }}>
+      <h1 style={{ margin:"0 0 24px", fontSize:24, fontWeight:800, color:"#F9FAFB" }}>📊 Reportes</h1>
+
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:16, marginBottom:28 }}>
+        {stats.map((s,i)=>(
+          <div key={i} style={{ background:"#1E293B", borderRadius:16, padding:20, border:"1px solid #334155" }}>
+            <div style={{ width:44, height:44, borderRadius:12, background:`${s.color}20`, display:"flex", alignItems:"center", justifyContent:"center", color:s.color, marginBottom:12 }}>
+              <Icon name={s.icon} size={22}/>
+            </div>
+            <div style={{ fontSize:26, fontWeight:800, color:"#F9FAFB" }}>{s.value}</div>
+            <div style={{ fontSize:13, color:"#64748B", marginTop:4 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
+        {/* Autos por marca */}
+        <div style={{ background:"#1E293B", borderRadius:16, padding:24, border:"1px solid #334155" }}>
+          <h3 style={{ margin:"0 0 20px", fontSize:16, fontWeight:700, color:"#F9FAFB" }}>Autos por marca</h3>
+          {Object.entries(byMarca).map(([marca,count])=>(
+            <div key={marca} style={{ marginBottom:12 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                <span style={{ fontSize:14, color:"#F9FAFB" }}>{marca}</span>
+                <span style={{ fontSize:14, fontWeight:700, color:"#3B82F6" }}>{count}</span>
+              </div>
+              <div style={{ height:6, background:"#374151", borderRadius:3 }}>
+                <div style={{ height:"100%", background:"linear-gradient(90deg,#2563EB,#3B82F6)", borderRadius:3, width:`${(count/autos.length)*100}%` }}/>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Autos por estado */}
+        <div style={{ background:"#1E293B", borderRadius:16, padding:24, border:"1px solid #334155" }}>
+          <h3 style={{ margin:"0 0 20px", fontSize:16, fontWeight:700, color:"#F9FAFB" }}>Stock por estado</h3>
+          {Object.entries(byEstado).map(([estado,count])=>{
+            const colorMap = { disponible:"#10B981", reservado:"#F59E0B", vendido:"#EF4444" };
+            return (
+              <div key={estado} style={{ marginBottom:12 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                  <span style={{ fontSize:14, color:"#F9FAFB", textTransform:"capitalize" }}>{estado}</span>
+                  <span style={{ fontSize:14, fontWeight:700, color:colorMap[estado]||"#9CA3AF" }}>{count}</span>
+                </div>
+                <div style={{ height:6, background:"#374151", borderRadius:3 }}>
+                  <div style={{ height:"100%", background:colorMap[estado]||"#9CA3AF", borderRadius:3, width:`${(count/autos.length)*100}%` }}/>
+                </div>
+              </div>
+            );
+          })}
+
+          <div style={{ marginTop:24, padding:16, background:"#0A0F1E", borderRadius:12 }}>
+            <div style={{ fontSize:12, color:"#64748B", marginBottom:4 }}>Valor total del stock</div>
+            <div style={{ fontSize:24, fontWeight:800, color:"#3B82F6" }}>
+              ${autos.filter(a=>a.estado!=="vendido").reduce((s,a)=>s+Number(a.precio),0).toLocaleString("es-AR")}
+            </div>
+          </div>
+        </div>
+
+        {/* Clientes por estado */}
+        <div style={{ background:"#1E293B", borderRadius:16, padding:24, border:"1px solid #334155" }}>
+          <h3 style={{ margin:"0 0 20px", fontSize:16, fontWeight:700, color:"#F9FAFB" }}>Embudo de clientes</h3>
+          {["nuevo","interesado","visita","reservado","vendido","cerrado"].map(estado=>{
+            const count = clientes.filter(c=>c.estado===estado).length;
+            return (
+              <div key={estado} style={{ display:"flex", alignItems:"center", gap:12, marginBottom:10 }}>
+                <StatusBadge status={estado}/>
+                <div style={{ flex:1, height:8, background:"#374151", borderRadius:4 }}>
+                  <div style={{ height:"100%", background:"#3B82F6", borderRadius:4, width:clientes.length?`${(count/clientes.length)*100}%`:"0%" }}/>
+                </div>
+                <span style={{ fontSize:14, fontWeight:700, color:"#F9FAFB", minWidth:20 }}>{count}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Comisiones */}
+        <div style={{ background:"#1E293B", borderRadius:16, padding:24, border:"1px solid #334155" }}>
+          <h3 style={{ margin:"0 0 20px", fontSize:16, fontWeight:700, color:"#F9FAFB" }}>Comisiones</h3>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:20 }}>
+            <div style={{ background:"#F59E0B15", border:"1px solid #F59E0B30", borderRadius:12, padding:16 }}>
+              <div style={{ fontSize:11, color:"#F59E0B" }}>Pendiente</div>
+              <div style={{ fontSize:20, fontWeight:800, color:"#F59E0B" }}>${comisiones.filter(c=>!c.pagado).reduce((s,c)=>s+c.monto,0).toLocaleString()}</div>
+            </div>
+            <div style={{ background:"#10B98115", border:"1px solid #10B98130", borderRadius:12, padding:16 }}>
+              <div style={{ fontSize:11, color:"#10B981" }}>Cobrado</div>
+              <div style={{ fontSize:20, fontWeight:800, color:"#10B981" }}>${comisiones.filter(c=>c.pagado).reduce((s,c)=>s+c.monto,0).toLocaleString()}</div>
+            </div>
+          </div>
+          {comisiones.slice(0,4).map(c=>(
+            <div key={c.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 0", borderBottom:"1px solid #1E293B" }}>
+              <div>
+                <div style={{ fontSize:13, fontWeight:600, color:"#F9FAFB" }}>{c.auto}</div>
+                <div style={{ fontSize:11, color:"#64748B" }}>{c.fecha}</div>
+              </div>
+              <div style={{ textAlign:"right" }}>
+                <div style={{ fontSize:14, fontWeight:700, color:c.pagado?"#10B981":"#F59E0B" }}>${c.monto.toLocaleString()}</div>
+                <StatusBadge status={c.pagado?"confirmado":"pendiente"}/>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── MÓDULO CONFIGURACIÓN ─────────────────────────────────────────────────────
+const ModuloConfiguracion = ({ user }) => {
+  const [config, setConfig] = useStorage("a499_config", { telefono:"2604127531", whatsapp:"2604127531", negocio:"Automotores 499", direccion:"Mendoza, Argentina", email:"info@automotores499.com" });
+
+  return (
+    <div style={{ padding:24, maxWidth:700 }}>
+      <h1 style={{ margin:"0 0 24px", fontSize:24, fontWeight:800, color:"#F9FAFB" }}>⚙️ Configuración</h1>
+
+      <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+        <div style={{ background:"#1E293B", borderRadius:16, padding:24, border:"1px solid #334155" }}>
+          <h3 style={{ margin:"0 0 20px", fontSize:16, fontWeight:700, color:"#F9FAFB" }}>Datos del negocio</h3>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+            <Field label="Nombre del negocio"><Input value={config.negocio} onChange={v=>setConfig({...config,negocio:v})}/></Field>
+            <Field label="Teléfono"><Input value={config.telefono} onChange={v=>setConfig({...config,telefono:v})}/></Field>
+            <Field label="WhatsApp"><Input value={config.whatsapp} onChange={v=>setConfig({...config,whatsapp:v})}/></Field>
+            <Field label="Email"><Input value={config.email} onChange={v=>setConfig({...config,email:v})}/></Field>
+            <Field label="Dirección" col={2}><Input value={config.direccion} onChange={v=>setConfig({...config,direccion:v})}/></Field>
+          </div>
+          <div style={{ marginTop:20 }}>
+            <Btn onClick={()=>alert("Configuración guardada")} variant="primary" icon="check">Guardar cambios</Btn>
+          </div>
+        </div>
+
+        <div style={{ background:"#1E293B", borderRadius:16, padding:24, border:"1px solid #334155" }}>
+          <h3 style={{ margin:"0 0 20px", fontSize:16, fontWeight:700, color:"#F9FAFB" }}>Perfil actual</h3>
+          <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+            <div style={{ width:64, height:64, borderRadius:"50%", background:"linear-gradient(135deg,#2563EB,#3B82F6)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, fontWeight:800, color:"#fff" }}>
+              {user.name[0]}
+            </div>
+            <div>
+              <div style={{ fontSize:20, fontWeight:700, color:"#F9FAFB" }}>{user.name}</div>
+              <div style={{ fontSize:14, color:"#64748B" }}>@{user.username} · Administrador</div>
+              <div style={{ fontSize:13, color:"#475569", marginTop:4 }}>Módulos: {user.modules?.join(", ")}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ background:"#1E293B", borderRadius:16, padding:24, border:"1px solid #334155" }}>
+          <h3 style={{ margin:"0 0 8px", fontSize:16, fontWeight:700, color:"#F9FAFB" }}>Acceso al catálogo público</h3>
+          <p style={{ margin:"0 0 16px", color:"#64748B", fontSize:14 }}>Comparte el catálogo con tus clientes</p>
+          <div style={{ display:"flex", gap:10 }}>
+            <Btn onClick={()=>{ const url = window.location.href.split("?")[0]+"?vista=publico"; navigator.clipboard?.writeText(url); alert("Enlace copiado: "+url); }} variant="secondary" icon="share">Copiar enlace del catálogo</Btn>
+            <Btn onClick={()=>{ window.open("?vista=publico","_blank"); }} variant="primary" icon="globe">Ver catálogo público</Btn>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+// ─── MÓDULO CONSULTAS ────────────────────────────────────────────────────────
+const FUENTES = ["Messenger","WhatsApp","Instagram","Teléfono","Web","Presencial","Otro"];
+const ESTADOS_C = { nueva:"#8B5CF6", pendiente:"#F59E0B", respondida:"#3B82F6", cerrada:"#10B981" };
+
+const ModuloConsultas = ({ consultas, setConsultas, clientes, autos }) => {
+  const [search, setSearch]       = useState("");
+  const [filterFuente, setFF]     = useState("");
+  const [filterEstado, setFE]     = useState("");
+  const [showForm, setShowForm]   = useState(false);
+  const [viewC, setViewC]         = useState(null);
+  const [nota, setNota]           = useState("");
+  const [form, setForm] = useState({
+    nombre:"", telefono:"", fuente:"Messenger", auto:"", mensaje:"",
+    estado:"nueva", fecha: new Date().toISOString().split("T")[0],
+    hora: new Date().toTimeString().slice(0,5), notas:[], interes:"", precio:""
+  });
+
+  const marcasAutos = [...new Set(autos.map(a=>`${a.marca} ${a.modelo} ${a.anio}`))];
+
+  const filtered = consultas.filter(c => {
+    const q = search.toLowerCase();
+    return (!q || `${c.nombre} ${c.telefono} ${c.auto} ${c.mensaje}`.toLowerCase().includes(q))
+      && (!filterFuente || c.fuente === filterFuente)
+      && (!filterEstado || c.estado === filterEstado);
+  }).sort((a,b) => b.id - a.id);
+
+  const saveConsulta = () => {
+    if (!form.nombre) return;
+    setConsultas([...consultas, { ...form, id: Date.now(), notas:[] }]);
+    setShowForm(false);
+    setForm({ nombre:"", telefono:"", fuente:"Messenger", auto:"", mensaje:"", estado:"nueva",
+      fecha: new Date().toISOString().split("T")[0], hora: new Date().toTimeString().slice(0,5), notas:[], interes:"", precio:"" });
+  };
+
+  const addNota = (id) => {
+    if (!nota.trim()) return;
+    setConsultas(consultas.map(c => c.id===id ? {...c, notas:[...(c.notas||[]), { texto:nota, fecha: new Date().toLocaleString("es-AR") }]} : c));
+    setNota("");
+    setViewC(consultas.find(c=>c.id===id));
+  };
+
+  const cambiarEstado = (id, estado) => {
+    setConsultas(consultas.map(c => c.id===id ? {...c, estado} : c));
+    if (viewC?.id === id) setViewC({...viewC, estado});
+  };
+
+  const del = id => { if(confirm("¿Eliminar consulta?")) { setConsultas(consultas.filter(c=>c.id!==id)); setViewC(null); }};
+
+  const stats = {
+    nueva:      consultas.filter(c=>c.estado==="nueva").length,
+    pendiente:  consultas.filter(c=>c.estado==="pendiente").length,
+    respondida: consultas.filter(c=>c.estado==="respondida").length,
+    cerrada:    consultas.filter(c=>c.estado==="cerrada").length,
+  };
+
+  const fuenteIcon = { Messenger:"💬", WhatsApp:"📱", Instagram:"📸", Teléfono:"📞", Web:"🌐", Presencial:"🤝", Otro:"✉️" };
+
+  return (
+    <div style={{ padding:24 }}>
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:24, flexWrap:"wrap", gap:12 }}>
+        <div>
+          <h1 style={{ margin:"0 0 4px", fontSize:24, fontWeight:800, color:"#F9FAFB" }}>💬 Consultas</h1>
+          <p style={{ margin:0, fontSize:13, color:"#64748B" }}>Registrá cada mensaje de Messenger, WhatsApp o donde sea — no pierdas ninguno</p>
+        </div>
+        <Btn onClick={()=>setShowForm(true)} variant="primary" icon="plus">Nueva Consulta</Btn>
+      </div>
+
+      {/* Stats */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:24 }}>
+        {Object.entries(stats).map(([estado, count]) => (
+          <div key={estado} onClick={()=>setFE(filterEstado===estado?"":estado)}
+            style={{ background:"#1E293B", borderRadius:14, padding:"16px 20px", border:`1px solid ${filterEstado===estado ? ESTADOS_C[estado] : "#374151"}`,
+              cursor:"pointer", transition:"all .2s", boxShadow: filterEstado===estado ? `0 0 12px ${ESTADOS_C[estado]}44` : "none" }}>
+            <div style={{ fontSize:28, fontWeight:800, color:ESTADOS_C[estado] }}>{count}</div>
+            <div style={{ fontSize:12, color:"#94A3B8", textTransform:"capitalize", marginTop:2 }}>{estado}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div style={{ display:"flex", gap:10, marginBottom:20, flexWrap:"wrap" }}>
+        <div style={{ position:"relative", flex:1, minWidth:200 }}>
+          <div style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", color:"#475569" }}><Icon name="search" size={16}/></div>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar por nombre, teléfono, auto..."
+            style={{ width:"100%", background:"#1E293B", border:"1px solid #334155", borderRadius:10, padding:"10px 12px 10px 36px", color:"#F9FAFB", fontSize:14, outline:"none", boxSizing:"border-box" }}/>
+        </div>
+        <select value={filterFuente} onChange={e=>setFF(e.target.value)} style={{ background:"#1E293B", border:"1px solid #334155", borderRadius:10, padding:"10px 12px", color:"#F9FAFB", fontSize:14 }}>
+          <option value="">Todas las fuentes</option>
+          {FUENTES.map(f=><option key={f}>{f}</option>)}
+        </select>
+        <select value={filterEstado} onChange={e=>setFE(e.target.value)} style={{ background:"#1E293B", border:"1px solid #334155", borderRadius:10, padding:"10px 12px", color:"#F9FAFB", fontSize:14 }}>
+          <option value="">Todos los estados</option>
+          {Object.keys(ESTADOS_C).map(s=><option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>)}
+        </select>
+      </div>
+
+      {/* List */}
+      <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+        {filtered.map(c => (
+          <div key={c.id} onClick={()=>setViewC(c)}
+            style={{ background:"#1E293B", borderRadius:14, padding:"16px 20px", border:`1px solid ${ESTADOS_C[c.estado]}30`,
+              borderLeft:`4px solid ${ESTADOS_C[c.estado]}`, cursor:"pointer", transition:"all .2s" }}
+            onMouseEnter={e=>e.currentTarget.style.transform="translateX(4px)"}
+            onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12 }}>
+              <div style={{ flex:1 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
+                  <div style={{ width:36, height:36, borderRadius:"50%", background:`${ESTADOS_C[c.estado]}25`,
+                    color:ESTADOS_C[c.estado], display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:16, flexShrink:0 }}>
+                    {c.nombre[0]?.toUpperCase()}
+                  </div>
+                  <div>
+                    <div style={{ fontSize:15, fontWeight:700, color:"#F9FAFB" }}>{c.nombre}</div>
+                    <div style={{ fontSize:12, color:"#64748B" }}>{c.telefono}</div>
+                  </div>
+                </div>
+                {c.auto && <div style={{ fontSize:13, color:"#94A3B8", marginBottom:4 }}>🚗 {c.auto}</div>}
+                {c.mensaje && <div style={{ fontSize:13, color:"#D1D5DB", background:"#0A0F1E", borderRadius:8, padding:"6px 10px", marginTop:6, maxWidth:500 }}>"{c.mensaje}"</div>}
+              </div>
+              <div style={{ textAlign:"right", flexShrink:0 }}>
+                <div style={{ fontSize:20 }}>{fuenteIcon[c.fuente]||"✉️"}</div>
+                <div style={{ fontSize:11, color:"#64748B", marginTop:2 }}>{c.fuente}</div>
+                <div style={{ fontSize:11, color:"#475569", marginTop:4 }}>{c.fecha} {c.hora}</div>
+                <div style={{ marginTop:6 }}>
+                  <span style={{ background:ESTADOS_C[c.estado]+"22", color:ESTADOS_C[c.estado], border:`1px solid ${ESTADOS_C[c.estado]}40`,
+                    borderRadius:20, padding:"2px 8px", fontSize:11, fontWeight:600 }}>{c.estado}</span>
+                </div>
+                {c.notas?.length > 0 && <div style={{ fontSize:11, color:"#64748B", marginTop:4 }}>📝 {c.notas.length} nota{c.notas.length>1?"s":""}</div>}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {filtered.length === 0 && (
+        <div style={{ textAlign:"center", padding:60, color:"#475569" }}>
+          <Icon name="message" size={60}/><div style={{ marginTop:12, fontSize:18 }}>No hay consultas registradas</div>
+          <div style={{ marginTop:8, fontSize:14 }}>Cuando alguien te escriba por Messenger o WhatsApp, registralo acá</div>
+        </div>
+      )}
+
+      {/* FORM MODAL */}
+      <Modal open={showForm} onClose={()=>setShowForm(false)} title="Nueva Consulta" wide>
+        <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+          <div style={{ background:"#0A0F1E", borderRadius:10, padding:"12px 16px", fontSize:13, color:"#94A3B8", borderLeft:"3px solid #3B82F6" }}>
+            💡 Cuando alguien te escriba por Messenger, WhatsApp o llame — registralo acá para no perderlo nunca.
+          </div>
+
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+            <Field label="Nombre del interesado">
+              <Input value={form.nombre} onChange={v=>setForm(p=>({...p,nombre:v}))} placeholder="Juan García"/>
+            </Field>
+            <Field label="Teléfono">
+              <Input value={form.telefono} onChange={v=>setForm(p=>({...p,telefono:v}))} placeholder="2604123456"/>
+            </Field>
+            <Field label="📣 Fuente (¿por dónde escribió?)">
+              <Select value={form.fuente} onChange={v=>setForm(p=>({...p,fuente:v}))}>
+                {FUENTES.map(f=><option key={f}>{f}</option>)}
+              </Select>
+            </Field>
+            <Field label="🚗 Auto de interés">
+              <select value={form.auto} onChange={e=>setForm(p=>({...p,auto:e.target.value}))}
+                style={{ width:"100%", background:"#0A0F1E", border:"1px solid #334155", borderRadius:8, padding:"10px 12px", color:"#F9FAFB", fontSize:14, outline:"none", boxSizing:"border-box" }}>
+                <option value="">-- Seleccionar auto --</option>
+                {marcasAutos.map(m=><option key={m}>{m}</option>)}
+                <option value="General / Sin especificar">General / Sin especificar</option>
+              </select>
+            </Field>
+            <Field label="Fecha">
+              <Input value={form.fecha} onChange={v=>setForm(p=>({...p,fecha:v}))} type="date"/>
+            </Field>
+            <Field label="Hora">
+              <Input value={form.hora} onChange={v=>setForm(p=>({...p,hora:v}))} type="time"/>
+            </Field>
+            <Field label="Estado">
+              <Select value={form.estado} onChange={v=>setForm(p=>({...p,estado:v}))}>
+                {Object.keys(ESTADOS_C).map(s=><option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>)}
+              </Select>
+            </Field>
+            <Field label="Precio ofrecido (opcional)">
+              <Input value={form.precio} onChange={v=>setForm(p=>({...p,precio:v}))} placeholder="20000000" type="number"/>
+            </Field>
+          </div>
+
+          <Field label="💬 Mensaje recibido (copiá y pegá el mensaje de Messenger)" col={2}>
+            <Textarea value={form.mensaje} onChange={v=>setForm(p=>({...p,mensaje:v}))}
+              placeholder={'Ejemplo: "Hola! Vi el Corolla, ¿sigue disponible? ¿cuánto está?"'} rows={3}/>
+          </Field>
+          <Field label="Notas internas (para vos)" col={2}>
+            <Textarea value={form.interes} onChange={v=>setForm(p=>({...p,interes:v}))}
+              placeholder="Ej: Muy interesado, tiene el dinero listo, quiere verlo el sábado..." rows={2}/>
+          </Field>
+
+          <div style={{ display:"flex", gap:12, justifyContent:"flex-end" }}>
+            <Btn onClick={()=>setShowForm(false)} variant="secondary">Cancelar</Btn>
+            <Btn onClick={saveConsulta} variant="primary" icon="check">Guardar consulta</Btn>
+          </div>
+        </div>
+      </Modal>
+
+      {/* DETAIL MODAL */}
+      <Modal open={!!viewC} onClose={()=>{setViewC(null);setNota("");}} title={viewC?.nombre||""} wide>
+        {viewC && (
+          <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+            {/* Info */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
+              {[
+                ["📣 Fuente", viewC.fuente],
+                ["📱 Teléfono", viewC.telefono],
+                ["🚗 Auto", viewC.auto||"No especificado"],
+                ["📅 Fecha", `${viewC.fecha} ${viewC.hora}`],
+                ["💰 Precio ofrecido", viewC.precio ? `$${Number(viewC.precio).toLocaleString("es-AR")}` : "No indicó"],
+                ["📊 Estado", viewC.estado],
+              ].map(([k,v])=>(
+                <div key={k} style={{ background:"#0A0F1E", borderRadius:10, padding:"10px 14px" }}>
+                  <div style={{ fontSize:11, color:"#64748B" }}>{k}</div>
+                  <div style={{ fontSize:13, fontWeight:600, color:"#F9FAFB", textTransform: k==="📊 Estado"?"capitalize":"none" }}>{v}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Mensaje original */}
+            {viewC.mensaje && (
+              <div style={{ background:"#2563EB12", border:"1px solid #2563EB30", borderRadius:12, padding:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:"#93C5FD", marginBottom:8 }}>💬 Mensaje recibido:</div>
+                <div style={{ fontSize:14, color:"#D1D5DB", lineHeight:1.7 }}>"{viewC.mensaje}"</div>
+              </div>
+            )}
+
+            {/* Notas internas */}
+            {viewC.interes && (
+              <div style={{ background:"#10B98112", border:"1px solid #10B98130", borderRadius:12, padding:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:"#6EE7B7", marginBottom:6 }}>📋 Notas internas:</div>
+                <div style={{ fontSize:13, color:"#D1D5DB" }}>{viewC.interes}</div>
+              </div>
+            )}
+
+            {/* Cambiar estado */}
+            <div>
+              <div style={{ fontSize:13, fontWeight:600, color:"#94A3B8", marginBottom:10 }}>Cambiar estado:</div>
+              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                {Object.entries(ESTADOS_C).map(([est, col])=>(
+                  <button key={est} onClick={()=>cambiarEstado(viewC.id, est)}
+                    style={{ background: viewC.estado===est ? col+"33" : "#374151", border:`1px solid ${viewC.estado===est ? col : "#4B5563"}`,
+                      borderRadius:20, padding:"6px 16px", color: viewC.estado===est ? col : "#9CA3AF",
+                      cursor:"pointer", fontSize:13, fontWeight:600, transition:"all .2s" }}>
+                    {est.charAt(0).toUpperCase()+est.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Timeline de notas */}
+            {(viewC.notas||[]).length > 0 && (
+              <div>
+                <div style={{ fontSize:13, fontWeight:600, color:"#94A3B8", marginBottom:12 }}>📝 Historial de notas:</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                  {(viewC.notas||[]).map((n,i)=>(
+                    <div key={i} style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+                      <div style={{ width:8, height:8, borderRadius:"50%", background:"#3B82F6", marginTop:6, flexShrink:0 }}/>
+                      <div style={{ background:"#0A0F1E", borderRadius:8, padding:"8px 12px", flex:1 }}>
+                        <div style={{ fontSize:11, color:"#475569", marginBottom:4 }}>{n.fecha}</div>
+                        <div style={{ fontSize:13, color:"#D1D5DB" }}>{n.texto}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Agregar nota */}
+            <div>
+              <div style={{ fontSize:13, fontWeight:600, color:"#94A3B8", marginBottom:8 }}>Agregar nota de seguimiento:</div>
+              <div style={{ display:"flex", gap:8 }}>
+                <input value={nota} onChange={e=>setNota(e.target.value)}
+                  onKeyDown={e=>e.key==="Enter"&&addNota(viewC.id)}
+                  placeholder="Ej: Llamé, no atendió. Volver a llamar mañana..."
+                  style={{ flex:1, background:"#0A0F1E", border:"1px solid #334155", borderRadius:8, padding:"10px 12px", color:"#F9FAFB", fontSize:13, outline:"none" }}/>
+                <Btn onClick={()=>addNota(viewC.id)} variant="primary" icon="send">Agregar</Btn>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display:"flex", gap:10, flexWrap:"wrap", paddingTop:8, borderTop:"1px solid #1E293B" }}>
+              {viewC.telefono && <>
+                <Btn onClick={()=>window.open(`https://wa.me/54${viewC.telefono.replace(/\D/g,"")}?text=Hola ${viewC.nombre}! Te contacto por el ${viewC.auto||"auto"} que consultaste en Automotores 499.`,"_blank")} variant="success" icon="whatsapp">Responder WA</Btn>
+                <Btn onClick={()=>window.open(`tel:${viewC.telefono}`)} variant="secondary" icon="phone">Llamar</Btn>
+              </>}
+              <Btn onClick={()=>del(viewC.id)} variant="danger" icon="trash">Eliminar</Btn>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+};
+
+// ─── VISTA CLIENTES (catálogo público sin contraseña) ────────────────────────
+const VistaClientes = ({ autos, consultas, setConsultas, onVolver }) => {
+  const [view, setView]           = useState("catalogo"); // "catalogo" | "detalle" | "consulta"
+  const [viewAuto, setViewAuto]   = useState(null);
+  const [fotoIdx, setFotoIdx]     = useState(0);
+  const [search, setSearch]       = useState("");
+  const [filterMarca, setFF]      = useState("");
+  const [showConsultaForm, setShowConsultaForm] = useState(false);
+  const [autoConsulta, setAutoConsulta]         = useState(null);
+  const [formEnviado, setFormEnviado]           = useState(false);
+  const [form, setForm] = useState({
+    nombre:"", telefono:"", mensaje:"", fecha:"", hora:"",
+    tipo:"consulta" // "consulta" | "visita"
+  });
+
+  const disponibles = autos.filter(a => a.estado !== "vendido");
+  const marcas      = [...new Set(disponibles.map(a => a.marca))];
+  const filtered    = disponibles.filter(a => {
+    const q = search.toLowerCase();
+    return (!q || `${a.marca} ${a.modelo} ${a.version}`.toLowerCase().includes(q))
+      && (!filterMarca || a.marca === filterMarca);
+  });
+
+  const abrirDetalle = (auto) => { setViewAuto(auto); setFotoIdx(0); setView("detalle"); };
+  const abrirConsulta = (auto, tipo="consulta") => {
+    setAutoConsulta(auto); setForm(p=>({...p,tipo})); setFormEnviado(false); setShowConsultaForm(true);
+  };
+
+  const enviarConsulta = () => {
+    if (!form.nombre || !form.telefono) return;
+    const nueva = {
+      id: Date.now(),
+      nombre: form.nombre, telefono: form.telefono,
+      fuente: "Web", auto: autoConsulta ? `${autoConsulta.marca} ${autoConsulta.modelo} ${autoConsulta.anio}` : "General",
+      mensaje: form.tipo === "visita"
+        ? `Solicita visita para el ${form.fecha} a las ${form.hora}. ${form.mensaje}`
+        : form.mensaje,
+      estado: "nueva",
+      fecha: new Date().toISOString().split("T")[0],
+      hora:  new Date().toTimeString().slice(0,5),
+      notas: [], interes: form.tipo === "visita" ? `Visita solicitada: ${form.fecha} ${form.hora}` : "",
+      precio: ""
+    };
+    setConsultas([...(consultas||[]), nueva]);
+    setFormEnviado(true);
+  };
+
+  const WA = (auto) => window.open(
+    `https://wa.me/542604127531?text=${encodeURIComponent(`Hola Alejandro! Consulto por el ${auto.marca} ${auto.modelo} ${auto.anio} - $${Number(auto.precio).toLocaleString("es-AR")}`)}`,"_blank"
+  );
+
+  const extras = { aire:"❄️ Aire acond.", cuero:"🪑 Cuero", pantalla:"📱 Pantalla", camara:"📷 Cámara",
+                   sensores:"📡 Sensores", GPS:"🗺️ GPS", techo:"🌅 Techo panorámico", service:"✅ Service oficial" };
+
+  const bgPage = { minHeight:"100vh", background:"#0F172A", fontFamily:"'Montserrat',sans-serif" };
+
+  // ── DETALLE ──────────────────────────────────────────────────────────────
+  if (view === "detalle" && viewAuto) return (
+    <div style={bgPage}>
+      {/* Topbar */}
+      <div style={{ background:"linear-gradient(135deg,#0A0F1E,#0F172A)", borderBottom:"1px solid #1E293B", padding:"14px 20px",
+        display:"flex", alignItems:"center", gap:12 }}>
+        <button onClick={()=>{setView("catalogo");setViewAuto(null);}}
+          style={{ background:"#1E293B", border:"1px solid #334155", borderRadius:10, padding:"8px 14px",
+            color:"#94A3B8", cursor:"pointer", display:"flex", alignItems:"center", gap:6, fontSize:13 }}>
+          <Icon name="arrowLeft" size={15}/> Volver
+        </button>
+        <div style={{ flex:1, textAlign:"center" }}>
+          <span style={{ fontSize:14, fontWeight:700, color:"#F9FAFB" }}>{viewAuto.marca} {viewAuto.modelo}</span>
+        </div>
+        <div style={{ width:60 }}/>
+      </div>
+
+      <div style={{ maxWidth:860, margin:"0 auto", padding:"24px 16px 60px" }}>
+        {/* Galería */}
+        <div style={{ borderRadius:20, overflow:"hidden", background:"#1E293B", marginBottom:24, position:"relative" }}>
+          {viewAuto.fotos?.length > 0 ? (
+            <>
+              <img src={viewAuto.fotos[fotoIdx]?.url} alt=""
+                style={{ width:"100%", height:320, objectFit:"cover", display:"block" }}/>
+              {viewAuto.fotos.length > 1 && (
+                <>
+                  <button onClick={()=>setFotoIdx(i=>(i-1+viewAuto.fotos.length)%viewAuto.fotos.length)}
+                    style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)",
+                      background:"#00000080", border:"none", borderRadius:"50%", width:40, height:40,
+                      color:"#fff", cursor:"pointer", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
+                  <button onClick={()=>setFotoIdx(i=>(i+1)%viewAuto.fotos.length)}
+                    style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)",
+                      background:"#00000080", border:"none", borderRadius:"50%", width:40, height:40,
+                      color:"#fff", cursor:"pointer", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
+                  <div style={{ position:"absolute", bottom:12, left:"50%", transform:"translateX(-50%)",
+                    display:"flex", gap:6 }}>
+                    {viewAuto.fotos.map((_,i)=>(
+                      <button key={i} onClick={()=>setFotoIdx(i)}
+                        style={{ width:i===fotoIdx?24:8, height:8, borderRadius:4,
+                          background:i===fotoIdx?"#3B82F6":"#ffffff60", border:"none", cursor:"pointer", transition:"all .2s" }}/>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            <div style={{ height:280, display:"flex", alignItems:"center", justifyContent:"center", color:"#334155" }}>
+              <Icon name="car" size={80}/>
+            </div>
+          )}
+        </div>
+
+        {/* Info principal */}
+        <div style={{ background:"#1E293B", borderRadius:20, padding:28, border:"1px solid #334155", marginBottom:16 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:12, marginBottom:20 }}>
+            <div>
+              <h1 style={{ margin:"0 0 4px", fontSize:26, fontWeight:800, color:"#F9FAFB" }}>
+                {viewAuto.marca} {viewAuto.modelo}
+              </h1>
+              <div style={{ color:"#94A3B8", fontSize:15 }}>{viewAuto.version}</div>
+            </div>
+            <div style={{ textAlign:"right" }}>
+              <div style={{ fontSize:32, fontWeight:900, color:"#3B82F6" }}>${Number(viewAuto.precio).toLocaleString("es-AR")}</div>
+              <StatusBadge status={viewAuto.estado}/>
+            </div>
+          </div>
+
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:20 }}>
+            {[["📅 Año",viewAuto.anio],["🛣️ Kilómetros",`${Number(viewAuto.km).toLocaleString()} km`],
+              ["🎨 Color",viewAuto.color],["⛽ Combustible",viewAuto.combustible],
+              ["⚙️ Caja",viewAuto.caja],["🔧 Motor",viewAuto.motor]].map(([k,v])=>(
+              <div key={k} style={{ background:"#0A0F1E", borderRadius:12, padding:"10px 14px" }}>
+                <div style={{ fontSize:11, color:"#64748B", marginBottom:3 }}>{k}</div>
+                <div style={{ fontSize:14, fontWeight:600, color:"#F9FAFB" }}>{v||"-"}</div>
+              </div>
+            ))}
+          </div>
+
+          {viewAuto.descripcion && (
+            <div style={{ background:"#0A0F1E", borderRadius:12, padding:16, marginBottom:16,
+              color:"#D1D5DB", fontSize:14, lineHeight:1.8 }}>{viewAuto.descripcion}</div>
+          )}
+
+          {viewAuto.extras?.length > 0 && (
+            <div>
+              <div style={{ fontSize:12, fontWeight:700, color:"#94A3B8", marginBottom:10, textTransform:"uppercase", letterSpacing:1 }}>Equipamiento</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                {viewAuto.extras.map(e=>(
+                  <span key={e} style={{ background:"#2563EB15", border:"1px solid #2563EB30",
+                    borderRadius:20, padding:"5px 14px", fontSize:13, color:"#93C5FD" }}>
+                    {extras[e]||e}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Botones de acción */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
+          <button onClick={()=>WA(viewAuto)}
+            style={{ background:"linear-gradient(135deg,#059669,#10B981)", border:"none", borderRadius:14,
+              padding:"16px", color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer",
+              display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+            <Icon name="whatsapp" size={20}/> Consultar por WhatsApp
+          </button>
+          <button onClick={()=>abrirConsulta(viewAuto,"visita")}
+            style={{ background:"linear-gradient(135deg,#2563EB,#3B82F6)", border:"none", borderRadius:14,
+              padding:"16px", color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer",
+              display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+            <Icon name="calendar" size={20}/> Reservar visita
+          </button>
+        </div>
+        <button onClick={()=>abrirConsulta(viewAuto,"consulta")}
+          style={{ width:"100%", background:"#1E293B", border:"1px solid #334155", borderRadius:14,
+            padding:"14px", color:"#94A3B8", fontWeight:600, fontSize:14, cursor:"pointer",
+            display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+          <Icon name="message" size={18}/> Dejar consulta escrita
+        </button>
+      </div>
+
+      {/* Formulario consulta/visita */}
+      {showConsultaForm && (
+        <div style={{ position:"fixed", inset:0, background:"#000000cc", zIndex:1000,
+          display:"flex", alignItems:"flex-end", justifyContent:"center" }}
+          onClick={()=>!formEnviado&&setShowConsultaForm(false)}>
+          <div onClick={e=>e.stopPropagation()}
+            style={{ background:"#1E293B", borderRadius:"20px 20px 0 0", width:"100%", maxWidth:600,
+              padding:28, border:"1px solid #334155", maxHeight:"90vh", overflowY:"auto" }}>
+            {formEnviado ? (
+              <div style={{ textAlign:"center", padding:"20px 0" }}>
+                <div style={{ fontSize:48, marginBottom:16 }}>✅</div>
+                <h3 style={{ fontSize:20, fontWeight:800, color:"#10B981", marginBottom:8 }}>¡Consulta enviada!</h3>
+                <p style={{ color:"#94A3B8", fontSize:14, marginBottom:20 }}>
+                  Alejandro va a contactarte a la brevedad al {form.telefono}
+                </p>
+                <button onClick={()=>{setShowConsultaForm(false);setFormEnviado(false);}}
+                  style={{ background:"#374151", border:"none", borderRadius:12, padding:"12px 28px",
+                    color:"#F9FAFB", fontWeight:600, cursor:"pointer" }}>Cerrar</button>
+              </div>
+            ) : (
+              <>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+                  <h3 style={{ fontSize:17, fontWeight:700, color:"#F9FAFB" }}>
+                    {form.tipo==="visita" ? "🗓️ Reservar visita" : "💬 Dejar consulta"}
+                  </h3>
+                  <button onClick={()=>setShowConsultaForm(false)}
+                    style={{ background:"#374151", border:"none", borderRadius:8, padding:8,
+                      color:"#94A3B8", cursor:"pointer" }}><Icon name="x" size={16}/></button>
+                </div>
+                {autoConsulta && (
+                  <div style={{ background:"#0A0F1E", borderRadius:10, padding:"10px 14px", marginBottom:16,
+                    fontSize:13, color:"#3B82F6", fontWeight:600 }}>
+                    🚗 {autoConsulta.marca} {autoConsulta.modelo} {autoConsulta.anio}
+                  </div>
+                )}
+                <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+                  <div>
+                    <label style={{ display:"block", fontSize:12, fontWeight:600, color:"#94A3B8", marginBottom:6 }}>Tu nombre *</label>
+                    <Input value={form.nombre} onChange={v=>setForm(p=>({...p,nombre:v}))} placeholder="Juan García"/>
+                  </div>
+                  <div>
+                    <label style={{ display:"block", fontSize:12, fontWeight:600, color:"#94A3B8", marginBottom:6 }}>Tu teléfono *</label>
+                    <Input value={form.telefono} onChange={v=>setForm(p=>({...p,telefono:v}))} placeholder="2604123456"/>
+                  </div>
+                  {form.tipo === "visita" && (
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                      <div>
+                        <label style={{ display:"block", fontSize:12, fontWeight:600, color:"#94A3B8", marginBottom:6 }}>Fecha preferida</label>
+                        <Input value={form.fecha} onChange={v=>setForm(p=>({...p,fecha:v}))} type="date"/>
+                      </div>
+                      <div>
+                        <label style={{ display:"block", fontSize:12, fontWeight:600, color:"#94A3B8", marginBottom:6 }}>Hora preferida</label>
+                        <Input value={form.hora} onChange={v=>setForm(p=>({...p,hora:v}))} type="time"/>
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <label style={{ display:"block", fontSize:12, fontWeight:600, color:"#94A3B8", marginBottom:6 }}>
+                      {form.tipo==="visita" ? "Alguna observación (opcional)" : "Tu consulta"}
+                    </label>
+                    <Textarea value={form.mensaje} onChange={v=>setForm(p=>({...p,mensaje:v}))}
+                      placeholder={form.tipo==="visita" ? "Ej: Voy con mi mecánico de confianza..." : "Ej: ¿Tiene todos los service? ¿Acepta permuta?"}
+                      rows={3}/>
+                  </div>
+                  {(!form.nombre || !form.telefono) && (
+                    <div style={{ fontSize:12, color:"#F59E0B" }}>* Nombre y teléfono son obligatorios</div>
+                  )}
+                  <button onClick={enviarConsulta} disabled={!form.nombre||!form.telefono}
+                    style={{ background: form.nombre&&form.telefono ? "linear-gradient(135deg,#2563EB,#3B82F6)" : "#374151",
+                      border:"none", borderRadius:12, padding:14, color:"#fff", fontWeight:700,
+                      fontSize:15, cursor: form.nombre&&form.telefono ? "pointer" : "not-allowed" }}>
+                    {form.tipo==="visita" ? "Solicitar visita" : "Enviar consulta"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* WhatsApp flotante */}
+      <a href="https://wa.me/542604127531" target="_blank"
+        style={{ position:"fixed", bottom:24, right:24, width:60, height:60, borderRadius:"50%",
+          background:"#25D366", display:"flex", alignItems:"center", justifyContent:"center",
+          boxShadow:"0 6px 20px #25D36660", zIndex:999, textDecoration:"none", color:"#fff" }}>
+        <Icon name="whatsapp" size={30}/>
+      </a>
+    </div>
+  );
+
+  // ── CATÁLOGO ─────────────────────────────────────────────────────────────
+  return (
+    <div style={bgPage}>
+      {/* Hero */}
+      <div style={{ background:"linear-gradient(135deg,#0B1120 0%,#1a3a6e 50%,#0B1120 100%)",
+        padding:"60px 20px 50px", textAlign:"center", position:"relative", overflow:"hidden" }}>
+        <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse at center, #2563EB20 0%, transparent 70%)" }}/>
+        <div style={{ position:"relative" }}>
+          <div style={{ width:72, height:72, borderRadius:18, background:"linear-gradient(135deg,#1E3A8A,#3B82F6)",
+            display:"inline-flex", alignItems:"center", justifyContent:"center", marginBottom:16,
+            boxShadow:"0 0 50px #3B82F655" }}>
+            <Icon name="car" size={38}/>
+          </div>
+          <h1 style={{ margin:"0 0 6px", fontSize:38, fontWeight:900, color:"#F9FAFB", letterSpacing:-1 }}>
+            AUTOMOTORES <span style={{ color:"#3B82F6" }}>499</span>
+          </h1>
+          <p style={{ margin:"0 0 6px", fontSize:16, color:"#94A3B8" }}>Compra y venta de vehículos · Mendoza</p>
+          <p style={{ margin:"0 0 24px", fontSize:15, color:"#64748B" }}>📱 2604127531 – Alejandro</p>
+          <button onClick={()=>document.getElementById("catalogo-clientes")?.scrollIntoView({behavior:"smooth"})}
+            style={{ background:"linear-gradient(135deg,#2563EB,#3B82F6)", border:"none", borderRadius:14,
+              padding:"14px 32px", color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer",
+              boxShadow:"0 8px 24px #2563EB44", display:"inline-flex", alignItems:"center", gap:8 }}>
+            <Icon name="car" size={18}/> Ver vehículos disponibles
+          </button>
+        </div>
+      </div>
+
+      {/* Catálogo */}
+      <div id="catalogo-clientes" style={{ maxWidth:1200, margin:"0 auto", padding:"40px 16px 80px", fontFamily:"'Montserrat',sans-serif" }}>
+        <h2 style={{ fontSize:20, fontWeight:800, color:"#F9FAFB", marginBottom:20 }}>
+          Vehículos disponibles <span style={{ fontSize:14, color:"#64748B", fontWeight:400 }}>({filtered.length})</span>
+        </h2>
+
+        {/* Buscador */}
+        <div style={{ display:"flex", gap:10, marginBottom:28, flexWrap:"wrap" }}>
+          <div style={{ position:"relative", flex:1, minWidth:200 }}>
+            <div style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"#475569" }}>
+              <Icon name="search" size={16}/>
+            </div>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar por marca, modelo..."
+              style={{ width:"100%", background:"#1E293B", border:"1px solid #334155", borderRadius:12,
+                padding:"12px 16px 12px 40px", color:"#F9FAFB", fontSize:14, outline:"none", boxSizing:"border-box" }}/>
+          </div>
+          <select value={filterMarca} onChange={e=>setFF(e.target.value)}
+            style={{ background:"#1E293B", border:"1px solid #334155", borderRadius:12,
+              padding:"12px 16px", color:"#F9FAFB", fontSize:14, outline:"none" }}>
+            <option value="">Todas las marcas</option>
+            {marcas.map(m=><option key={m}>{m}</option>)}
+          </select>
+        </div>
+
+        {/* Grid */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:20 }}>
+          {filtered.map(auto=>(
+            <div key={auto.id}
+              style={{ background:"#1E293B", borderRadius:20, border:"1px solid #334155", overflow:"hidden",
+                transition:"all .3s", cursor:"pointer" }}
+              onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-6px)";e.currentTarget.style.boxShadow="0 20px 40px #00000060";}}
+              onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";}}>
+              <div style={{ height:200, background:"#0A0F1E", display:"flex", alignItems:"center",
+                justifyContent:"center", position:"relative", overflow:"hidden" }}
+                onClick={()=>abrirDetalle(auto)}>
+                {auto.fotos?.length > 0
+                  ? <img src={auto.fotos[0].url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                  : <div style={{ color:"#334155" }}><Icon name="car" size={64}/></div>}
+                <div style={{ position:"absolute", top:12, right:12 }}><StatusBadge status={auto.estado}/></div>
+                {auto.fotos?.length > 1 && (
+                  <div style={{ position:"absolute", bottom:8, right:12, background:"#00000080",
+                    borderRadius:20, padding:"2px 8px", fontSize:11, color:"#fff" }}>
+                    📷 {auto.fotos.length}
+                  </div>
+                )}
+              </div>
+              <div style={{ padding:20 }}>
+                <div style={{ fontSize:19, fontWeight:700, color:"#F9FAFB", marginBottom:3 }}
+                  onClick={()=>abrirDetalle(auto)}>
+                  {auto.marca} {auto.modelo}
+                </div>
+                <div style={{ fontSize:13, color:"#64748B", marginBottom:10 }}>{auto.version} · {auto.anio}</div>
+                <div style={{ display:"flex", gap:16, fontSize:13, color:"#94A3B8", marginBottom:14 }}>
+                  <span>🛣️ {Number(auto.km).toLocaleString()} km</span>
+                  <span>⚙️ {auto.caja}</span>
+                  <span>🎨 {auto.color}</span>
+                </div>
+                <div style={{ fontSize:26, fontWeight:900, color:"#3B82F6", marginBottom:16 }}>
+                  ${Number(auto.precio).toLocaleString("es-AR")}
+                </div>
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={()=>abrirDetalle(auto)}
+                    style={{ flex:1, background:"linear-gradient(135deg,#2563EB,#3B82F6)", border:"none",
+                      borderRadius:10, padding:"10px", color:"#fff", fontWeight:600, fontSize:13,
+                      cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                    <Icon name="eye" size={15}/> Ver más
+                  </button>
+                  <button onClick={()=>WA(auto)}
+                    style={{ flex:1, background:"linear-gradient(135deg,#059669,#10B981)", border:"none",
+                      borderRadius:10, padding:"10px", color:"#fff", fontWeight:600, fontSize:13,
+                      cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                    <Icon name="whatsapp" size={15}/> WhatsApp
+                  </button>
+                </div>
+                <button onClick={()=>abrirConsulta(auto,"visita")}
+                  style={{ width:"100%", marginTop:8, background:"transparent", border:"1px solid #334155",
+                    borderRadius:10, padding:"9px", color:"#94A3B8", fontWeight:600, fontSize:13,
+                    cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                  <Icon name="calendar" size={14}/> Reservar visita
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {filtered.length === 0 && (
+          <div style={{ textAlign:"center", padding:80, color:"#475569" }}>
+            <Icon name="car" size={80}/>
+            <div style={{ marginTop:16, fontSize:20 }}>No hay vehículos disponibles en este momento</div>
+            <div style={{ marginTop:8, fontSize:14 }}>Consultanos por WhatsApp para más info</div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div style={{ background:"#0A0F1E", borderTop:"1px solid #1F2937", padding:"36px 20px", textAlign:"center" }}>
+        <div style={{ fontSize:22, fontWeight:800, color:"#F9FAFB", marginBottom:6 }}>Automotores 499</div>
+        <div style={{ fontSize:16, color:"#94A3B8", marginBottom:4 }}>📱 2604127531 – Alejandro</div>
+        <p style={{ color:"#475569", fontSize:13, marginBottom:16 }}>© {new Date().getFullYear()} Automotores 499 · Mendoza, Argentina</p>
+        <button onClick={onVolver}
+          style={{ background:"#1E293B", border:"1px solid #334155", borderRadius:10, padding:"8px 18px",
+            color:"#64748B", cursor:"pointer", fontSize:13 }}>
+          ← Volver al inicio
+        </button>
+      </div>
+
+      {/* Formulario flotante */}
+      {showConsultaForm && (
+        <div style={{ position:"fixed", inset:0, background:"#000000cc", zIndex:1000,
+          display:"flex", alignItems:"flex-end", justifyContent:"center" }}
+          onClick={()=>!formEnviado&&setShowConsultaForm(false)}>
+          <div onClick={e=>e.stopPropagation()}
+            style={{ background:"#1E293B", borderRadius:"20px 20px 0 0", width:"100%", maxWidth:600,
+              padding:28, border:"1px solid #334155", maxHeight:"90vh", overflowY:"auto" }}>
+            {formEnviado ? (
+              <div style={{ textAlign:"center", padding:"20px 0" }}>
+                <div style={{ fontSize:48, marginBottom:16 }}>✅</div>
+                <h3 style={{ fontSize:20, fontWeight:800, color:"#10B981", marginBottom:8 }}>¡Consulta enviada!</h3>
+                <p style={{ color:"#94A3B8", fontSize:14, marginBottom:20 }}>
+                  Alejandro va a contactarte a la brevedad al {form.telefono}
+                </p>
+                <button onClick={()=>{setShowConsultaForm(false);setFormEnviado(false);}}
+                  style={{ background:"#374151", border:"none", borderRadius:12, padding:"12px 28px",
+                    color:"#F9FAFB", fontWeight:600, cursor:"pointer" }}>Cerrar</button>
+              </div>
+            ) : (
+              <>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+                  <h3 style={{ fontSize:17, fontWeight:700, color:"#F9FAFB" }}>
+                    {form.tipo==="visita" ? "🗓️ Reservar visita" : "💬 Dejar consulta"}
+                  </h3>
+                  <button onClick={()=>setShowConsultaForm(false)}
+                    style={{ background:"#374151", border:"none", borderRadius:8, padding:8,
+                      color:"#94A3B8", cursor:"pointer" }}><Icon name="x" size={16}/></button>
+                </div>
+                {autoConsulta && (
+                  <div style={{ background:"#0A0F1E", borderRadius:10, padding:"10px 14px", marginBottom:16,
+                    fontSize:13, color:"#3B82F6", fontWeight:600 }}>
+                    🚗 {autoConsulta.marca} {autoConsulta.modelo} {autoConsulta.anio}
+                  </div>
+                )}
+                <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+                  <div>
+                    <label style={{ display:"block", fontSize:12, fontWeight:600, color:"#94A3B8", marginBottom:6 }}>Tu nombre *</label>
+                    <Input value={form.nombre} onChange={v=>setForm(p=>({...p,nombre:v}))} placeholder="Juan García"/>
+                  </div>
+                  <div>
+                    <label style={{ display:"block", fontSize:12, fontWeight:600, color:"#94A3B8", marginBottom:6 }}>Tu teléfono *</label>
+                    <Input value={form.telefono} onChange={v=>setForm(p=>({...p,telefono:v}))} placeholder="2604123456"/>
+                  </div>
+                  {form.tipo === "visita" && (
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                      <div>
+                        <label style={{ display:"block", fontSize:12, fontWeight:600, color:"#94A3B8", marginBottom:6 }}>Fecha preferida</label>
+                        <Input value={form.fecha} onChange={v=>setForm(p=>({...p,fecha:v}))} type="date"/>
+                      </div>
+                      <div>
+                        <label style={{ display:"block", fontSize:12, fontWeight:600, color:"#94A3B8", marginBottom:6 }}>Hora preferida</label>
+                        <Input value={form.hora} onChange={v=>setForm(p=>({...p,hora:v}))} type="time"/>
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <label style={{ display:"block", fontSize:12, fontWeight:600, color:"#94A3B8", marginBottom:6 }}>
+                      {form.tipo==="visita" ? "Alguna observación (opcional)" : "Tu consulta"}
+                    </label>
+                    <Textarea value={form.mensaje} onChange={v=>setForm(p=>({...p,mensaje:v}))}
+                      placeholder={form.tipo==="visita" ? "Ej: Voy con mi mecánico..." : "Ej: ¿Acepta permuta? ¿Tiene service oficial?"}
+                      rows={3}/>
+                  </div>
+                  {(!form.nombre || !form.telefono) && (
+                    <div style={{ fontSize:12, color:"#F59E0B" }}>* Nombre y teléfono son obligatorios</div>
+                  )}
+                  <button onClick={enviarConsulta} disabled={!form.nombre||!form.telefono}
+                    style={{ background: form.nombre&&form.telefono ? "linear-gradient(135deg,#2563EB,#3B82F6)" : "#374151",
+                      border:"none", borderRadius:12, padding:14, color:"#fff", fontWeight:700,
+                      fontSize:15, cursor: form.nombre&&form.telefono ? "pointer" : "not-allowed" }}>
+                    {form.tipo==="visita" ? "Solicitar visita" : "Enviar consulta"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* WhatsApp flotante */}
+      <a href="https://wa.me/542604127531" target="_blank"
+        style={{ position:"fixed", bottom:24, right:24, width:60, height:60, borderRadius:"50%",
+          background:"#25D366", display:"flex", alignItems:"center", justifyContent:"center",
+          boxShadow:"0 6px 20px #25D36660", zIndex:999, textDecoration:"none", color:"#fff" }}>
+        <Icon name="whatsapp" size={30}/>
+      </a>
+    </div>
+  );
+};
+
+// ─── APP ROOT ─────────────────────────────────────────────────────────────────
+function App() {
+  const [user,       setUser]       = useStorage("a499_user", null);
+  const [screen,     setScreen]     = useState("portada"); // "portada" | "clientes" | "panel"
+  const [activeModule, setActiveModule] = useState("dashboard");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // ── todos los datos guardados, separados por usuario ──
+  const uid = user?.username || "guest";
+  const [autosAle,    setAutosAle]    = useStorage("a499_autos_automotores499",    SAMPLE_AUTOS);
+  const [autosFlor,   setAutosFlor]   = useStorage("a499_autos_florencia499",      SAMPLE_AUTOS);
+  const [clientesAle, setClientesAle] = useStorage("a499_clientes_automotores499", SAMPLE_CLIENTES);
+  const [clientesFlor,setClientesFlor]= useStorage("a499_clientes_florencia499",   SAMPLE_CLIENTES);
+  const [agendaAle,   setAgendaAle]   = useStorage("a499_agenda_automotores499",   SAMPLE_AGENDA);
+  const [agendaFlor,  setAgendaFlor]  = useStorage("a499_agenda_florencia499",     SAMPLE_AGENDA);
+  const [comisAle,    setComisAle]    = useStorage("a499_comis_automotores499",    SAMPLE_COMISIONES);
+  const [comisFlor,   setComisFlor]   = useStorage("a499_comis_florencia499",      SAMPLE_COMISIONES);
+
+  // consultas públicas — compartidas, para que ambos admin las vean
+  const [consultasPublicas, setConsultasPublicas] = useStorage("a499_consultas_publicas", []);
+
+  // consultas internas de cada admin
+  const [consultasAle,  setConsultasAle]  = useStorage("a499_consultas_automotores499", []);
+  const [consultasFlor, setConsultasFlor] = useStorage("a499_consultas_florencia499",   []);
+
+  const autos        = uid === "florencia499" ? autosFlor    : autosAle;
+  const setAutos     = uid === "florencia499" ? setAutosFlor : setAutosAle;
+  const clientes     = uid === "florencia499" ? clientesFlor    : clientesAle;
+  const setClientes  = uid === "florencia499" ? setClientesFlor : setClientesAle;
+  const agenda       = uid === "florencia499" ? agendaFlor    : agendaAle;
+  const setAgenda    = uid === "florencia499" ? setAgendaFlor : setAgendaAle;
+  const comisiones   = uid === "florencia499" ? comisFlor    : comisAle;
+  const setComisiones= uid === "florencia499" ? setComisFlor : setComisAle;
+  const consultas    = uid === "florencia499" ? consultasFlor    : consultasAle;
+  const setConsultas = uid === "florencia499" ? setConsultasFlor : setConsultasAle;
+
+  // autos visibles públicamente = los de AMBOS admins juntos (para el catálogo de clientes)
+  const autosPublicos = [...autosAle, ...autosFlor].filter(a => a.estado !== "vendido");
+
+  const handleLogin  = userData => { setUser(userData); setScreen("panel"); setActiveModule("dashboard"); };
+  const handleLogout = () => { setUser(null); setScreen("portada"); };
+
+  // ── PORTADA ──
+  if (screen === "portada") return (
+    <Portada
+      onAdmin={() => { /* la Portada maneja el login internamente y llama onAdmin con el user */ }}
+      onAdminLogin={handleLogin}
+      onClientes={() => setScreen("clientes")}
+    />
+  );
+
+  // ── VISTA CLIENTES ──
+  if (screen === "clientes") return (
+    <VistaClientes
+      autos={autosPublicos}
+      consultas={consultasPublicas}
+      setConsultas={setConsultasPublicas}
+      onVolver={() => setScreen("portada")}
+    />
+  );
+
+  const renderModule = () => {
+    switch(activeModule) {
+      case "dashboard": return <Dashboard user={user} autos={autos} clientes={clientes} agenda={agenda} comisiones={comisiones}/>;
+      case "autos": return <ModuloAutos autos={autos} setAutos={setAutos}/>;
+      case "clientes": return <ModuloClientes clientes={clientes} setClientes={setClientes} autos={autos}/>;
+      case "agenda": return <ModuloAgenda agenda={agenda} setAgenda={setAgenda}/>;
+      case "comisiones": return <ModuloComisiones comisiones={comisiones} setComisiones={setComisiones}/>;
+      case "documentos": return <ModuloDocumentos autos={autos}/>;
+      case "reportes": return <ModuloReportes autos={autos} clientes={clientes} agenda={agenda} comisiones={comisiones}/>;
+      case "consultas": return <ModuloConsultas consultas={consultas} setConsultas={setConsultas} clientes={clientes} autos={autos}/>;
+      case "configuracion": return <ModuloConfiguracion user={user}/>;
+      default: return <Dashboard user={user} autos={autos} clientes={clientes} agenda={agenda} comisiones={comisiones}/>;
+    }
+  };
+
+  return (
+    <div style={{ minHeight:"100vh", background:"#0F172A", fontFamily:"'Montserrat',sans-serif", display:"flex", flexDirection:"column" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+      <div style={{ display:"flex", flex:1, overflow:"hidden", height:"100vh" }}>
+        <Sidebar activeModule={activeModule} onNavigate={setActiveModule} user={user} collapsed={sidebarCollapsed} onToggle={()=>setSidebarCollapsed(!sidebarCollapsed)}/>
+        <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+          <Header user={user} onLogout={handleLogout} onToggleSidebar={()=>setSidebarCollapsed(!sidebarCollapsed)}/>
+          <main style={{ flex:1, overflowY:"auto" }}>
+            {renderModule()}
+          </main>
+          <div style={{ background:"#0A0F1E", borderTop:"1px solid #1E293B", padding:"10px 24px", fontSize:11, color:"#334155", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <span>Automotores 499</span>
+            <span>📱 2604127531 – Alejandro</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
