@@ -542,12 +542,14 @@ const Sidebar = ({ activeModule, onNavigate, user, collapsed, onToggle }) => {
 };
 
 // ─── HEADER ───────────────────────────────────────────────────────────────────
-const Header = ({ user, onLogout, onToggleSidebar }) => {
-  const [dropOpen, setDropOpen] = useState(false);
+const Header = ({ user, onLogout, onToggleSidebar, consultasNuevas, onVerConsultas }) => {
+  const [dropOpen, setDropOpen]   = useState(false);
+  const [bellOpen, setBellOpen]   = useState(false);
+  const n = consultasNuevas || 0;
   return (
     <div style={{ height:62, background:"linear-gradient(135deg,#0F172A,#1E293B)",
       borderBottom:"1px solid #1E293B", display:"flex", alignItems:"center",
-      padding:"0 20px", gap:14, flexShrink:0, fontFamily:"'Montserrat',sans-serif" }}>
+      padding:"0 20px", gap:14, flexShrink:0, fontFamily:"'Montserrat',sans-serif", position:"relative", zIndex:50 }}>
       <button onClick={onToggleSidebar} style={{ background:"#1E293B", border:"1px solid #334155",
         borderRadius:10, padding:9, color:"#94A3B8", cursor:"pointer", transition:"all .2s" }}>
         <Icon name="menu" size={17}/>
@@ -561,14 +563,75 @@ const Header = ({ user, onLogout, onToggleSidebar }) => {
         </div>
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:10, marginLeft:"auto" }}>
-        <button style={{ background:"#1E293B", border:"1px solid #334155", borderRadius:10, padding:10,
-          color:"#94A3B8", cursor:"pointer", position:"relative" }}>
-          <Icon name="bell" size={17}/>
-          <span style={{ position:"absolute", top:7, right:7, width:7, height:7, borderRadius:"50%",
-            background:"#DC2626", boxShadow:"0 0 6px #DC2626" }}/>
-        </button>
+
+        {/* CAMPANITA DE NOTIFICACIONES */}
         <div style={{ position:"relative" }}>
-          <button onClick={() => setDropOpen(!dropOpen)} style={{ background:"#1E293B",
+          <button onClick={()=>{setBellOpen(!bellOpen);setDropOpen(false);}}
+            style={{ background: n>0 ? "#DC262618" : "#1E293B",
+              border: n>0 ? "1px solid #DC262640" : "1px solid #334155",
+              borderRadius:10, padding:10, color: n>0 ? "#F87171" : "#94A3B8",
+              cursor:"pointer", position:"relative", transition:"all .2s" }}>
+            <Icon name="bell" size={17}/>
+            {n > 0 && (
+              <span style={{ position:"absolute", top:-5, right:-5, minWidth:18, height:18,
+                borderRadius:9, background:"#DC2626", color:"#fff", fontSize:10, fontWeight:800,
+                display:"flex", alignItems:"center", justifyContent:"center", padding:"0 4px",
+                boxShadow:"0 0 8px #DC2626", animation:"pulse-red 2s infinite" }}>
+                {n > 9 ? "9+" : n}
+              </span>
+            )}
+          </button>
+
+          {bellOpen && (
+            <div onClick={()=>setBellOpen(false)}
+              style={{ position:"absolute", right:0, top:"calc(100% + 10px)", width:320,
+                background:"linear-gradient(135deg,#1E293B,#0F172A)", border:"1px solid #334155",
+                borderRadius:16, boxShadow:"0 20px 50px #00000080", overflow:"hidden", zIndex:200 }}>
+              <div style={{ padding:"14px 16px", borderBottom:"1px solid #334155",
+                display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <div style={{ fontSize:13, fontWeight:800, color:"#FFF" }}>Consultas nuevas</div>
+                {n > 0 && <span style={{ background:"#DC262620", border:"1px solid #DC262640",
+                  borderRadius:20, padding:"2px 10px", fontSize:11, color:"#F87171", fontWeight:700 }}>{n} sin leer</span>}
+              </div>
+              {n === 0 ? (
+                <div style={{ padding:24, textAlign:"center", color:"#475569", fontSize:13 }}>
+                  <div style={{ fontSize:28, marginBottom:8 }}>✅</div>
+                  No hay consultas pendientes
+                </div>
+              ) : (
+                <>
+                  <div style={{ padding:"8px 0", maxHeight:200, overflowY:"auto" }}>
+                    <div style={{ padding:"10px 16px", display:"flex", alignItems:"center", gap:10,
+                      borderBottom:"1px solid #1E293B" }}>
+                      <div style={{ width:36, height:36, borderRadius:10, background:"#DC262620",
+                        display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        <Icon name="message" size={16}/>
+                      </div>
+                      <div>
+                        <div style={{ fontSize:12, fontWeight:700, color:"#FFF" }}>
+                          {n} {n===1?"consulta":"consultas"} de clientes esperando respuesta
+                        </div>
+                        <div style={{ fontSize:11, color:"#64748B", marginTop:2 }}>Desde el catálogo web</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ padding:"10px 12px" }}>
+                    <button onClick={()=>{setBellOpen(false); onVerConsultas&&onVerConsultas();}}
+                      style={{ width:"100%", background:"linear-gradient(135deg,#DC2626,#B91C1C)",
+                        border:"none", borderRadius:10, padding:"10px", color:"#fff",
+                        fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"'Montserrat',sans-serif" }}>
+                      Ver todas las consultas →
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* PERFIL */}
+        <div style={{ position:"relative" }}>
+          <button onClick={() => {setDropOpen(!dropOpen);setBellOpen(false);}} style={{ background:"#1E293B",
             border:"1px solid #334155", borderRadius:10, padding:"7px 12px",
             color:"#F9FAFB", cursor:"pointer", display:"flex", alignItems:"center", gap:8, transition:"all .2s" }}>
             <div style={{ width:30, height:30, borderRadius:"50%",
@@ -583,7 +646,7 @@ const Header = ({ user, onLogout, onToggleSidebar }) => {
           {dropOpen && (
             <div style={{ position:"absolute", right:0, top:"calc(100% + 8px)", background:"#1E293B",
               border:"1px solid #334155", borderRadius:14, minWidth:180,
-              boxShadow:"0 12px 40px #00000070", overflow:"hidden", zIndex:100 }}>
+              boxShadow:"0 12px 40px #00000070", overflow:"hidden", zIndex:200 }}>
               <div style={{ padding:"12px 16px", borderBottom:"1px solid #334155", fontSize:12, color:"#64748B" }}>
                 <div style={{ fontWeight:800, color:"#FFF", fontSize:14 }}>{user.name}</div>
                 <div>@{user.username}</div>
@@ -607,7 +670,7 @@ const Header = ({ user, onLogout, onToggleSidebar }) => {
 };
 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
-const Dashboard = ({ user, autos, clientes, agenda, comisiones }) => {
+const Dashboard = ({ user, autos, clientes, agenda, comisiones, consultasNuevas, onVerConsultas }) => {
   const disponibles = autos.filter(a=>a.estado==="disponible").length;
   const vendidosMes = autos.filter(a=>a.estado==="vendido").length;
   const citasPendientes = agenda.filter(a=>a.estado==="pendiente").length;
@@ -616,11 +679,12 @@ const Dashboard = ({ user, autos, clientes, agenda, comisiones }) => {
 
   const cards = [
     { icon:"car", label:"Autos disponibles", value:disponibles, color:"#3B82F6", bg:"#3B82F620" },
-    { icon:"check", label:"Vendidos este mes", value:vendidosMes, color:"#10B981", bg:"#10B98120" },
+    { icon:"check", label:"Vendidos (total)", value:vendidosMes, color:"#10B981", bg:"#10B98120" },
     { icon:"calendar", label:"Citas pendientes", value:citasPendientes, color:"#F59E0B", bg:"#F59E0B20" },
     { icon:"users", label:"Clientes activos", value:clientesActivos, color:"#8B5CF6", bg:"#8B5CF620" },
     { icon:"dollar", label:"Comisión estimada", value:`$${(comisionTotal/1000).toFixed(0)}k`, color:"#EC4899", bg:"#EC489920" },
-    { icon:"chart", label:"Consultas recientes", value:12, color:"#14B8A6", bg:"#14B8A620" },
+    { icon:"message", label:"Consultas nuevas", value:consultasNuevas||0, color:"#DC2626", bg:"#DC262620",
+      highlight:(consultasNuevas||0)>0, onClick:onVerConsultas },
   ];
 
   const activity = [
@@ -638,16 +702,48 @@ const Dashboard = ({ user, autos, clientes, agenda, comisiones }) => {
         <p style={{ margin:0, color:"#64748B", fontSize:15 }}>Resumen del día – {new Date().toLocaleDateString("es-AR",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</p>
       </div>
 
+      {/* Alerta consultas nuevas */}
+      {(consultasNuevas||0) > 0 && (
+        <div onClick={onVerConsultas}
+          style={{ background:"linear-gradient(135deg,#DC262614,#DC262806)", border:"1px solid #DC262838",
+            borderRadius:14, padding:"14px 20px", marginBottom:20, cursor:"pointer",
+            display:"flex", alignItems:"center", gap:14, transition:"all .2s" }}
+          onMouseEnter={e=>e.currentTarget.style.background="linear-gradient(135deg,#DC262620,#DC262810)"}
+          onMouseLeave={e=>e.currentTarget.style.background="linear-gradient(135deg,#DC262614,#DC262806)"}>
+          <div style={{ width:42, height:42, borderRadius:12, background:"#DC262628",
+            display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0,
+            animation:"pulse-red 2s infinite" }}>
+            <Icon name="message" size={20}/>
+          </div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:14, fontWeight:800, color:"#F87171" }}>
+              🔔 {consultasNuevas} consulta{consultasNuevas>1?"s":""} nueva{consultasNuevas>1?"s":""} de clientes web
+            </div>
+            <div style={{ fontSize:12, color:"#94A3B8", marginTop:2 }}>
+              Clientes del catálogo esperando respuesta — hacé click para verlas
+            </div>
+          </div>
+          <div style={{ fontSize:20, color:"#DC2626", fontWeight:700 }}>→</div>
+        </div>
+      )}
+
       {/* Stats cards */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:16, marginBottom:32 }}>
         {cards.map((c,i) => (
-          <div key={i} style={{ background:"#1E293B", borderRadius:16, padding:20, border:"1px solid #334155", cursor:"pointer", transition:"all .2s", position:"relative", overflow:"hidden" }}
-            onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
+          <div key={i} onClick={c.onClick}
+            style={{ background: c.highlight ? "linear-gradient(135deg,#DC262618,#DC262808)" : "#1E293B",
+              borderRadius:16, padding:20,
+              border: c.highlight ? "1px solid #DC262640" : "1px solid #334155",
+              cursor: c.onClick ? "pointer" : "default",
+              transition:"all .2s", position:"relative", overflow:"hidden",
+              boxShadow: c.highlight ? "0 0 20px #DC262625" : "none",
+              animation: c.highlight ? "pulse-red 3s infinite" : "none" }}
+            onMouseEnter={e=>e.currentTarget.style.transform="translateY(-3px)"}
             onMouseLeave={e=>e.currentTarget.style.transform="none"}>
             <div style={{ width:48, height:48, borderRadius:12, background:c.bg, display:"flex", alignItems:"center", justifyContent:"center", color:c.color, marginBottom:12 }}>
               <Icon name={c.icon} size={24}/>
             </div>
-            <div style={{ fontSize:28, fontWeight:800, color:"#F9FAFB" }}>{c.value}</div>
+            <div style={{ fontSize:28, fontWeight:800, color: c.highlight ? "#F87171" : "#F9FAFB" }}>{c.value}</div>
             <div style={{ fontSize:13, color:"#94A3B8", marginTop:4 }}>{c.label}</div>
             <div style={{ position:"absolute", top:-20, right:-20, width:80, height:80, borderRadius:"50%", background:c.bg }}/>
           </div>
@@ -1876,21 +1972,31 @@ const VistaClientes = ({ autos, consultas, setConsultas, onVolver }) => {
 
   const enviarConsulta = () => {
     if (!form.nombre || !form.telefono) return;
+    const esVisita = form.tipo === "visita";
     const nueva = {
       id: Date.now(),
-      nombre: form.nombre, telefono: form.telefono,
-      fuente: "Web", auto: autoConsulta ? `${autoConsulta.marca} ${autoConsulta.modelo} ${autoConsulta.anio}` : "General",
-      mensaje: form.tipo === "visita"
-        ? `Solicita visita para el ${form.fecha} a las ${form.hora}. ${form.mensaje}`
-        : form.mensaje,
+      nombre: form.nombre,
+      telefono: form.telefono,
+      fuente: "Web",
+      auto: autoConsulta ? `${autoConsulta.marca} ${autoConsulta.modelo} ${autoConsulta.anio}` : "General",
+      mensaje: esVisita
+        ? `[VISITA SOLICITADA] Fecha: ${form.fecha} - Hora: ${form.hora}${form.mensaje ? ". Observación: " + form.mensaje : ""}`
+        : form.mensaje || "(Sin mensaje)",
       estado: "nueva",
       fecha: new Date().toISOString().split("T")[0],
       hora:  new Date().toTimeString().slice(0,5),
-      notas: [], interes: form.tipo === "visita" ? `Visita solicitada: ${form.fecha} ${form.hora}` : "",
-      precio: ""
+      notas: [],
+      interes: esVisita ? `🗓️ Visita solicitada: ${form.fecha} a las ${form.hora}` : "",
+      precio: "",
+      tipo: form.tipo,
+      autoId: autoConsulta?.id || null,
     };
     setConsultas([...(consultas||[]), nueva]);
     setFormEnviado(true);
+    // Reset form for next use
+    setTimeout(() => {
+      setForm({ nombre:"", telefono:"", mensaje:"", fecha:"", hora:"", tipo:"consulta" });
+    }, 3000);
   };
 
   const WA = (auto) => window.open(
@@ -2400,14 +2506,14 @@ function App() {
 
   const renderModule = () => {
     switch(activeModule) {
-      case "dashboard": return <Dashboard user={user} autos={autos} clientes={clientes} agenda={agenda} comisiones={comisiones}/>;
+      case "dashboard": return <Dashboard user={user} autos={autos} clientes={clientes} agenda={agenda} comisiones={comisiones} consultasNuevas={[...(consultasPublicas||[]),...(consultas||[])].filter(c=>c.estado==="nueva").length} onVerConsultas={()=>setActiveModule("consultas")}/>;
       case "autos": return <ModuloAutos autos={autos} setAutos={setAutos}/>;
       case "clientes": return <ModuloClientes clientes={clientes} setClientes={setClientes} autos={autos}/>;
       case "agenda": return <ModuloAgenda agenda={agenda} setAgenda={setAgenda}/>;
       case "comisiones": return <ModuloComisiones comisiones={comisiones} setComisiones={setComisiones}/>;
       case "documentos": return <ModuloDocumentos autos={autos}/>;
       case "reportes": return <ModuloReportes autos={autos} clientes={clientes} agenda={agenda} comisiones={comisiones}/>;
-      case "consultas": return <ModuloConsultas consultas={consultas} setConsultas={setConsultas} clientes={clientes} autos={autos}/>;
+      case "consultas": return <ModuloConsultas consultas={[...(consultasPublicas||[]), ...(consultas||[])]} setConsultas={(updated) => { const publicas = updated.filter(c=>c.fuente==="Web"); const internas = updated.filter(c=>c.fuente!=="Web"); setConsultasPublicas(publicas); setConsultas(internas); }} clientes={clientes} autos={autos}/>;
       case "configuracion": return <ModuloConfiguracion user={user}/>;
       default: return <Dashboard user={user} autos={autos} clientes={clientes} agenda={agenda} comisiones={comisiones}/>;
     }
@@ -2419,7 +2525,7 @@ function App() {
       <div style={{ display:"flex", flex:1, overflow:"hidden", height:"100vh" }}>
         <Sidebar activeModule={activeModule} onNavigate={setActiveModule} user={user} collapsed={sidebarCollapsed} onToggle={()=>setSidebarCollapsed(!sidebarCollapsed)}/>
         <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-          <Header user={user} onLogout={handleLogout} onToggleSidebar={()=>setSidebarCollapsed(!sidebarCollapsed)}/>
+          <Header user={user} onLogout={handleLogout} onToggleSidebar={()=>setSidebarCollapsed(!sidebarCollapsed)} consultasNuevas={[...(consultasPublicas||[]),...(consultas||[])].filter(c=>c.estado==="nueva").length} onVerConsultas={()=>setActiveModule("consultas")}/>
           <main style={{ flex:1, overflowY:"auto" }}>
             {renderModule()}
           </main>
