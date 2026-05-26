@@ -35,6 +35,24 @@
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Firebase SDK -->
+  <script type="module" id="firebase-init">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, collection, onSnapshot, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    const firebaseConfig = {
+      apiKey: "AIzaSyDNgLIRmD8MC2YzWyVG5ulaqCgb5Hqv_ok",
+      authDomain: "automotores499-5e890.firebaseapp.com",
+      projectId: "automotores499-5e890",
+      storageBucket: "automotores499-5e890.firebasestorage.app",
+      messagingSenderId: "19348476563",
+      appId: "1:19348476563:web:e33983a08a4f3a7653f366"
+    };
+    const fbApp = initializeApp(firebaseConfig);
+    window.__db = getFirestore(fbApp);
+    window.__fbFuncs = { doc, collection, onSnapshot, setDoc, deleteDoc };
+    window.dispatchEvent(new Event("firebase-ready"));
+    console.log("Firebase OK");
+  </script>
   <script type="text/babel">
     const { useState, useEffect, useRef, useCallback } = React;
 
@@ -54,12 +72,50 @@ const SAMPLE_AGENDA = [];
 
 const SAMPLE_COMISIONES = [];
 
-// ─── STORAGE HELPERS ─────────────────────────────────────────────────────────
+// ─── FIREBASE SYNC HELPERS ───────────────────────────────────────────────────
+// useStorage: sincroniza con Firestore en tiempo real.
+// Cada "key" es un documento en la colección "datos499".
+// Si Firebase no está listo aún, cae a localStorage como fallback.
 const useStorage = (key, initial) => {
   const [val, setVal] = useState(() => {
     try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : initial; } catch { return initial; }
   });
-  const save = useCallback(v => { setVal(v); try { localStorage.setItem(key, JSON.stringify(v)); } catch{} }, [key]);
+  const [fbReady, setFbReady] = useState(!!window.__db);
+
+  useEffect(() => {
+    if (window.__db) { setFbReady(true); return; }
+    const handler = () => setFbReady(true);
+    window.addEventListener("firebase-ready", handler);
+    return () => window.removeEventListener("firebase-ready", handler);
+  }, []);
+
+  // Suscribirse a cambios en Firestore
+  useEffect(() => {
+    if (!fbReady || !window.__db) return;
+    const { doc, onSnapshot } = window.__fbFuncs;
+    const ref = doc(window.__db, "datos499", key);
+    const unsub = onSnapshot(ref, snap => {
+      if (snap.exists()) {
+        const data = snap.data().value;
+        setVal(data);
+        try { localStorage.setItem(key, JSON.stringify(data)); } catch {}
+      }
+    }, err => console.warn("Firestore read error:", err));
+    return () => unsub();
+  }, [fbReady, key]);
+
+  const save = useCallback(v => {
+    setVal(v);
+    // Guardar en localStorage siempre (fallback offline)
+    try { localStorage.setItem(key, JSON.stringify(v)); } catch {}
+    // Guardar en Firestore si está disponible
+    if (window.__db) {
+      const { doc, setDoc } = window.__fbFuncs;
+      setDoc(doc(window.__db, "datos499", key), { value: v })
+        .catch(err => console.warn("Firestore write error:", err));
+    }
+  }, [key]);
+
   return [val, save];
 };
 
@@ -2445,10 +2501,19 @@ const VistaClientes = ({ autos, consultas, setConsultas, onVolver }) => {
 
 // ─── APP ROOT ─────────────────────────────────────────────────────────────────
 function App() {
+  const [fbStatus, setFbStatus] = useState(window.__db ? "ok" : "connecting");
   const [user,       setUser]       = useStorage("a499_user", null);
   const [screen,     setScreen]     = useState("portada"); // "portada" | "clientes" | "panel"
   const [activeModule, setActiveModule] = useState("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (window.__db) { setFbStatus("ok"); return; }
+    const t = setTimeout(() => setFbStatus("offline"), 5000);
+    const h = () => { setFbStatus("ok"); clearTimeout(t); };
+    window.addEventListener("firebase-ready", h);
+    return () => { window.removeEventListener("firebase-ready", h); clearTimeout(t); };
+  }, []);
 
   // ── todos los datos guardados, separados por usuario ──
   const uid = user?.username || "guest";
@@ -2484,6 +2549,30 @@ function App() {
 
   const handleLogin  = userData => { setUser(userData); setScreen("panel"); setActiveModule("dashboard"); };
   const handleLogout = () => { setUser(null); setScreen("portada"); };
+
+  // ── PANTALLA CARGA FIREBASE ──
+  if (fbStatus === "connecting") return (
+    <div style={{ minHeight:"100vh", background:"#0F172A", display:"flex", flexDirection:"column",
+      alignItems:"center", justifyContent:"center", fontFamily:"'Montserrat',sans-serif" }}>
+      <div style={{ textAlign:"center" }}>
+        <div style={{ width:70, height:70, borderRadius:20, background:"linear-gradient(135deg,#DC2626,#B91C1C)",
+          display:"inline-flex", alignItems:"center", justifyContent:"center", marginBottom:24,
+          boxShadow:"0 0 40px #DC262660", animation:"pulse-red 1.5s infinite" }}>
+          <Icon name="car" size={36}/>
+        </div>
+        <div style={{ fontSize:28, fontWeight:900, color:"#FFF", marginBottom:4 }}>
+          AUTOMOTORES <span style={{ color:"#DC2626" }}>499</span>
+        </div>
+        <div style={{ fontSize:13, color:"#64748B", marginBottom:28 }}>Conectando con la base de datos...</div>
+        <div style={{ display:"flex", gap:8, justifyContent:"center" }}>
+          {[0,1,2].map(i=>(
+            <div key={i} style={{ width:10, height:10, borderRadius:"50%", background:"#DC2626",
+              animation:`pulse-red ${0.6+i*0.2}s ease-in-out infinite` }}/>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 
   // ── PORTADA ──
   if (screen === "portada") return (
@@ -2531,6 +2620,14 @@ function App() {
           </main>
           <div style={{ background:"#0A0F1E", borderTop:"1px solid #1E293B", padding:"10px 24px", fontSize:11, color:"#334155", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <span>Automotores 499</span>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{ width:7, height:7, borderRadius:"50%",
+                background: fbStatus==="ok" ? "#10B981" : fbStatus==="connecting" ? "#F59E0B" : "#EF4444",
+                boxShadow: fbStatus==="ok" ? "0 0 6px #10B981" : "none" }}/>
+              <span style={{ color: fbStatus==="ok" ? "#10B981" : "#64748B", fontWeight:600 }}>
+                {fbStatus==="ok" ? "Sincronizado ✓" : fbStatus==="connecting" ? "Conectando..." : "Sin conexión"}
+              </span>
+            </div>
             <span>📱 2604127531 – Alejandro</span>
           </div>
         </div>
